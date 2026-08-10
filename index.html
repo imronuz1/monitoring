@@ -1,0 +1,2219 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#fdfaf3" />
+<title>Ежедневный прогресс</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='80'%3E%E2%AD%90%3C/text%3E%3C/svg%3E" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+  :root {
+    --bg: #fdfaf3;
+    --bg-alt: #f7f1e3;
+    --card: #ffffff;
+    --card-tint: #fbf7ee;
+    --border: #ece5d2;
+    --divider: #f3edde;
+    --ink: #2c2c3e;
+    --ink-soft: #5e5e6e;
+    --muted: #8d8676;
+    --peach: #f5b39c;
+    --peach-deep: #e89773;
+    --peach-soft: #fde6dc;
+    --mint: #a8d8b9;
+    --mint-deep: #6eb886;
+    --mint-soft: #e2f3e7;
+    --butter: #ffd58e;
+    --butter-deep: #f0b95d;
+    --butter-soft: #fef0d3;
+    --lavender: #c4b5dc;
+    --lavender-deep: #9b87bf;
+    --lavender-soft: #ede7f5;
+    --sky: #a8cce8;
+    --sky-deep: #6ea7d3;
+    --sky-soft: #e3eff8;
+    --rose: #f3a9b8;
+    --rose-soft: #fbe1e6;
+    --shadow-xs: 0 1px 3px rgba(44, 44, 62, 0.04);
+    --shadow-sm: 0 2px 8px rgba(44, 44, 62, 0.05);
+    --shadow-md: 0 4px 16px rgba(44, 44, 62, 0.07);
+    --shadow-lg: 0 10px 28px rgba(44, 44, 62, 0.10);
+    --radius-xs: 8px;
+    --radius-sm: 12px;
+    --radius-md: 16px;
+    --radius-lg: 22px;
+    --radius-xl: 28px;
+    --pill: 999px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(245, 179, 156, 0.12) 0, transparent 40%),
+      radial-gradient(circle at 88% 14%, rgba(196, 181, 220, 0.10) 0, transparent 35%),
+      radial-gradient(circle at 50% 100%, rgba(168, 216, 185, 0.08) 0, transparent 50%);
+  }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: 28px 32px 80px; }
+
+  .card { background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 24px; }
+  .card-soft { background: var(--card-tint); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; }
+
+  .h-eyebrow { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .h-section { font-family: 'Plus Jakarta Sans', 'Nunito', sans-serif; font-weight: 800; font-size: 22px; color: var(--ink); letter-spacing: -0.01em; }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--pill);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+  }
+  .pill.peach { background: var(--peach-soft); color: var(--peach-deep); }
+  .pill.mint { background: var(--mint-soft); color: var(--mint-deep); }
+  .pill.butter { background: var(--butter-soft); color: var(--butter-deep); }
+  .pill.lavender { background: var(--lavender-soft); color: var(--lavender-deep); }
+  .pill.sky { background: var(--sky-soft); color: var(--sky-deep); }
+  .pill.muted { background: var(--bg-alt); color: var(--muted); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    color: var(--ink);
+    padding: 10px 18px;
+    border-radius: var(--pill);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s, border-color 0.2s;
+    line-height: 1;
+  }
+  .btn:hover:not(:disabled) { background: var(--bg-alt); border-color: var(--ink-soft); }
+  .btn:active:not(:disabled) { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .btn.primary:hover:not(:disabled) { background: var(--peach-deep); border-color: var(--peach-deep); }
+  .btn.danger { color: var(--peach-deep); border-color: var(--peach-soft); }
+  .btn.danger:hover { background: var(--peach-soft); border-color: var(--peach-deep); }
+  .btn.icon { width: 40px; height: 40px; padding: 0; border-radius: var(--radius-sm); }
+
+  .header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: center;
+    margin-bottom: 28px;
+    padding: 22px 26px;
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  .header-left { display: flex; align-items: center; gap: 18px; min-width: 0; }
+  .avatar {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--peach), var(--butter));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+  }
+  .header-name {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .header-meta {
+    margin-top: 4px;
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+  }
+  .header-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); display: inline-block; }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .header-actions { display: flex; gap: 8px; }
+
+  .date-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .date-strip-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .date-label { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 24px; color: var(--ink); }
+  .date-iso { color: var(--muted); font-size: 14px; font-weight: 600; }
+  .date-nav { display: flex; gap: 6px; align-items: center; }
+  .date-nav .btn.icon { background: var(--card); }
+  .date-nav input[type="date"] {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .date-nav input[type="date"]:focus { outline: 2px solid var(--peach); outline-offset: 1px; }
+
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .summary-card {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .summary-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .summary-card .label {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+  .summary-card .value {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 36px;
+    line-height: 1;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+  .summary-card .value .unit {
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-left: 4px;
+  }
+  .summary-card .ring {
+    position: absolute;
+    right: -30px;
+    top: -30px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    opacity: 0.25;
+  }
+  .summary-card.peach .ring { background: var(--peach); }
+  .summary-card.mint  .ring { background: var(--mint); }
+  .summary-card.butter .ring { background: var(--butter); }
+  .summary-card.lavender .ring { background: var(--lavender); }
+
+  .mood-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .mood-btn {
+    background: var(--card-tint);
+    border: 1.5px solid transparent;
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+    transition: all 0.15s;
+  }
+  .mood-btn:hover { background: var(--bg-alt); }
+  .mood-btn.active { background: var(--peach-soft); border-color: var(--peach); }
+  .mood-label { font-size: 13px; font-weight: 700; color: var(--ink); margin-top: 6px; }
+
+  .star-row { display: flex; gap: 4px; align-items: center; margin-top: 4px; }
+  .star {
+    font-size: 28px;
+    line-height: 1;
+    color: var(--bg-alt);
+    transition: transform 0.2s;
+  }
+  .star.filled { color: var(--butter-deep); text-shadow: 0 2px 4px rgba(240, 185, 93, 0.25); }
+  .star.filled.pop { animation: starPop 0.5s ease; }
+  @keyframes starPop {
+    0% { transform: scale(0.6); }
+    60% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+
+  .grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 24px; }
+  .section { margin-bottom: 24px; }
+  .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .section-head h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px; color: var(--ink); letter-spacing: -0.01em; }
+  .section-head .meta { color: var(--muted); font-size: 13px; font-weight: 600; }
+
+  .subjects { display: flex; flex-direction: column; gap: 12px; }
+  .subject {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 18px 22px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    transition: box-shadow 0.2s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .subject:hover { box-shadow: var(--shadow-md); }
+  .subject.complete { background: linear-gradient(135deg, var(--mint-soft), var(--card)); }
+  .subject.complete::after {
+    content: '✓';
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    width: 26px; height: 26px;
+    background: var(--mint-deep);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 900;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pop 0.4s ease;
+    box-shadow: var(--shadow-sm);
+  }
+  @keyframes pop { 0% { transform: scale(0); } 65% { transform: scale(1.2); } 100% { transform: scale(1); } }
+  .subject.dragging { opacity: 0.4; }
+  .subject.drag-over { box-shadow: 0 0 0 3px var(--peach) inset; }
+
+  .drag-handle {
+    color: var(--border);
+    cursor: grab;
+    user-select: none;
+    font-size: 18px;
+    padding: 6px 2px;
+    line-height: 1;
+    flex-shrink: 0;
+    letter-spacing: -2px;
+  }
+  .drag-handle:hover { color: var(--muted); }
+  .drag-handle:active { cursor: grabbing; }
+
+  .subject-icon {
+    width: 52px; height: 52px;
+    border-radius: var(--radius-md);
+    background: var(--card-tint);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 800;
+    flex-shrink: 0;
+    border: 1.5px solid var(--border);
+  }
+  .subject.complete .subject-icon { background: var(--mint-deep); color: #fff; border-color: var(--mint-deep); }
+
+  .subject-info { flex: 1 1 160px; min-width: 0; }
+  .subject-name {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--ink);
+    overflow-wrap: break-word;
+    word-break: normal;
+    line-height: 1.2;
+  }
+  .subject-meta { margin-top: 2px; color: var(--muted); font-size: 13px; font-weight: 600; }
+  .subject-meta .pct { color: var(--peach-deep); font-weight: 800; margin-left: 6px; }
+  .subject.complete .subject-meta .pct { color: var(--mint-deep); }
+
+  .subject-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 280px;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .stepper-btn {
+    background: var(--card-tint);
+    border: 1.5px solid var(--border);
+    border-radius: 50%;
+    width: 42px; height: 42px;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1;
+    flex-shrink: 0;
+    transition: transform 0.1s, background 0.15s, border-color 0.15s;
+  }
+  .stepper-btn:hover:not(:disabled) { background: var(--peach-soft); border-color: var(--peach); }
+  .stepper-btn:active:not(:disabled) { transform: scale(0.92); }
+  .stepper-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .progress-input {
+    width: 64px;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--border);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 30px;
+    font-weight: 800;
+    padding: 4px 0;
+    color: var(--ink);
+    -moz-appearance: textfield;
+    line-height: 1;
+  }
+  .progress-input::-webkit-outer-spin-button,
+  .progress-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .progress-input:focus { outline: none; border-color: var(--peach); }
+  .progress-of { color: var(--muted); font-size: 14px; font-weight: 600; }
+  .progress-target { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 700; color: var(--muted); }
+  .progress-unit { color: var(--muted); font-weight: 600; font-size: 12px; margin-left: 2px; }
+  .progress-bar {
+    flex: 1 1 100%;
+    height: 10px;
+    background: var(--card-tint);
+    border: 1px solid var(--border);
+    border-radius: var(--pill);
+    overflow: hidden;
+    margin-top: 6px;
+    min-width: 80px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--peach), var(--peach-deep));
+    border-radius: var(--pill);
+    transition: width 0.4s ease;
+  }
+  .subject.complete .progress-fill { background: linear-gradient(90deg, var(--mint), var(--mint-deep)); }
+
+  .subject-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    width: 34px; height: 34px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--ink-soft);
+    transition: all 0.15s;
+  }
+  .icon-btn:hover:not(:disabled) { background: var(--card-tint); border-color: var(--ink-soft); color: var(--ink); }
+  .icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .icon-btn.danger:hover { background: var(--peach-soft); border-color: var(--peach); color: var(--peach-deep); }
+
+  .subject-edit {
+    flex: 1 1 100%;
+    display: grid;
+    grid-template-columns: 60px 1fr 100px 110px auto auto;
+    gap: 10px;
+    padding-top: 14px;
+    margin-top: 6px;
+    align-items: center;
+    border-top: 1px dashed var(--divider);
+  }
+  .subject-edit input {
+    background: var(--card-tint);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-xs);
+    padding: 9px 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    width: 100%;
+    color: var(--ink);
+  }
+  .subject-edit input:focus { outline: 2px solid var(--peach); outline-offset: -1px; border-color: transparent; }
+
+  .add-form {
+    background: var(--card);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+    margin-top: 14px;
+  }
+  .add-form-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 12px; color: var(--ink-soft); }
+  .add-form-row { display: grid; grid-template-columns: 70px 1fr 100px 110px auto; gap: 10px; align-items: center; }
+  .add-form input {
+    background: var(--card-tint);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-xs);
+    padding: 11px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink);
+    width: 100%;
+  }
+  .add-form input:focus { outline: 2px solid var(--peach); outline-offset: -1px; border-color: transparent; }
+
+  .checklist { display: flex; flex-direction: column; gap: 8px; }
+  .checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    background: var(--card-tint);
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .checklist-item:hover { background: var(--bg-alt); }
+  .checklist-item.done { background: var(--mint-soft); border-color: var(--mint); }
+  .checklist-check {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 14px;
+    color: transparent;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .checklist-item.done .checklist-check { background: var(--mint-deep); border-color: var(--mint-deep); color: #fff; }
+  .checklist-label { font-weight: 700; color: var(--ink); font-size: 15px; flex: 1; }
+  .checklist-item.done .checklist-label {
+    color: var(--ink-soft);
+    text-decoration: line-through;
+    text-decoration-color: var(--mint-deep);
+    text-decoration-thickness: 2px;
+  }
+
+  .notes-card { background: var(--card); border-radius: var(--radius-lg); padding: 22px; box-shadow: var(--shadow-sm); }
+  .notes-card h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 18px; margin-bottom: 12px; color: var(--ink); }
+  .notes-card textarea {
+    width: 100%;
+    min-height: 100px;
+    background: var(--card-tint);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--ink);
+    resize: vertical;
+    line-height: 1.55;
+  }
+  .notes-card textarea:focus { outline: 2px solid var(--peach); outline-offset: -1px; border-color: transparent; }
+  .notes-card .meta { font-family: 'Nunito', sans-serif; font-weight: 600; font-size: 12px; color: var(--muted); margin-top: 8px; text-align: right; }
+
+  .sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+  .reward {
+    background: linear-gradient(135deg, var(--lavender-soft), var(--peach-soft));
+    border-radius: var(--radius-xl);
+    padding: 26px;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+  }
+  .reward::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    left: -20%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(255, 213, 142, 0.5) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .reward-stars { position: relative; display: flex; justify-content: center; gap: 6px; margin-bottom: 6px; }
+  .reward-stars .star { font-size: 36px; }
+  .reward-message {
+    position: relative;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 1.2;
+    color: var(--ink);
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+  .reward-sub { position: relative; color: var(--ink-soft); font-weight: 600; font-size: 14px; margin-bottom: 14px; }
+  .reward-badge {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--card);
+    border-radius: var(--pill);
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--ink);
+    box-shadow: var(--shadow-xs);
+  }
+  .reward-badge .emoji { font-size: 18px; }
+  .reward-progress { position: relative; margin-top: 14px; text-align: left; }
+  .reward-progress .label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px; }
+  .reward-progress .bar { height: 8px; background: rgba(255,255,255,0.5); border-radius: var(--pill); overflow: hidden; }
+  .reward-progress .bar-fill { height: 100%; background: linear-gradient(90deg, var(--butter), var(--peach)); border-radius: var(--pill); transition: width 0.5s ease; }
+  .reward-progress .text { font-size: 12px; font-weight: 700; color: var(--ink-soft); margin-top: 4px; }
+
+  .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .week-day {
+    aspect-ratio: 1;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    background: var(--card);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .week-day:hover { background: var(--card-tint); border-color: var(--ink-soft); }
+  .week-day.today { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .week-day.active { box-shadow: 0 0 0 2px var(--peach); }
+  .week-day-label { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 10px; opacity: 0.7; }
+  .week-day-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; line-height: 1; margin-top: 2px; }
+  .week-day-bar { width: 78%; height: 3px; background: var(--card-tint); border-radius: var(--pill); margin-top: 5px; }
+  .week-day.today .week-day-bar { background: rgba(255,255,255,0.25); }
+  .week-day-bar-fill { height: 100%; background: var(--peach-deep); border-radius: var(--pill); }
+  .week-day-bar-fill.full { background: var(--mint-deep); }
+  .week-day.today .week-day-bar-fill,
+  .week-day.today .week-day-bar-fill.full { background: var(--butter); }
+
+  .history-list { display: flex; flex-direction: column; gap: 0; }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--divider);
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-item:hover { opacity: 0.75; }
+  .history-date { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 13px; color: var(--muted); min-width: 64px; }
+  .history-pct { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 17px; color: var(--ink); min-width: 50px; text-align: right; }
+  .history-bar { flex: 1; height: 6px; background: var(--card-tint); border-radius: var(--pill); margin: 0 14px; overflow: hidden; }
+  .history-bar-fill { height: 100%; background: var(--peach-deep); border-radius: var(--pill); }
+  .history-bar-fill.full { background: var(--mint-deep); }
+
+  .empty { text-align: center; padding: 36px 16px; color: var(--muted); font-weight: 600; font-size: 15px; }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.5; }
+
+  .loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 15px; color: var(--muted); text-align: center; }
+  .loading .err { color: var(--peach-deep); margin-top: 12px; font-size: 13px; }
+
+  .save-status { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+  .save-status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mint-deep); }
+  .save-status.saving .dot { background: var(--butter-deep); animation: pulse 1s infinite; }
+  .save-status.error .dot { background: var(--peach-deep); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .footer {
+    margin-top: 36px;
+    padding-top: 22px;
+    border-top: 1px dashed var(--border);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--ink);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: var(--pill);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    transition: transform 0.3s ease;
+    z-index: 100;
+    box-shadow: var(--shadow-lg);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(44, 44, 62, 0.5);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 16px;
+    z-index: 200;
+    overflow-y: auto;
+  }
+  .modal { background: var(--card); border-radius: var(--radius-xl); max-width: 720px; width: 100%; padding: 32px; box-shadow: var(--shadow-lg); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--divider); }
+  .modal-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: -0.01em; }
+  .modal-close { background: transparent; border: 1.5px solid var(--border); border-radius: var(--radius-sm); width: 36px; height: 36px; cursor: pointer; font-size: 18px; color: var(--ink-soft); }
+  .modal-close:hover { background: var(--card-tint); color: var(--ink); }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 22px; }
+  .stats-card { background: var(--card-tint); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px; }
+  .stats-card .label { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stats-card .value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 30px; font-weight: 800; line-height: 1; }
+  .stats-card .value .unit { font-family: 'Nunito', sans-serif; font-size: 12px; font-weight: 600; color: var(--muted); margin-left: 4px; }
+  .stats-section { margin-top: 24px; }
+  .stats-section h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 18px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--divider); }
+
+  .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+  .month-cell {
+    aspect-ratio: 1;
+    border: 1px solid var(--divider);
+    border-radius: var(--radius-xs);
+    background: var(--card);
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 4px 5px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--muted);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .month-cell.empty { opacity: 0.3; cursor: default; }
+  .month-cell .fill { position: absolute; inset: 0; background: var(--peach); opacity: 0.18; transform-origin: bottom; }
+  .month-cell.full .fill { background: var(--mint-deep); opacity: 0.55; }
+  .month-cell .num { position: relative; z-index: 1; }
+  .month-cell:hover { border-color: var(--ink); }
+
+  .subject-stats { display: flex; flex-direction: column; gap: 12px; }
+  .subj-stat-row { display: grid; grid-template-columns: 32px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--divider); }
+  .subj-stat-row:last-child { border-bottom: none; }
+  .subj-stat-icon { width: 32px; height: 32px; border-radius: 10px; background: var(--card-tint); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+  .subj-stat-name { font-weight: 800; font-size: 15px; }
+  .subj-stat-bar { height: 8px; background: var(--card-tint); border-radius: var(--pill); margin-top: 4px; overflow: hidden; }
+  .subj-stat-bar-fill { height: 100%; background: var(--mint-deep); border-radius: var(--pill); }
+  .subj-stat-pct { font-weight: 700; font-size: 13px; color: var(--muted); min-width: 88px; text-align: right; }
+
+  .settings-section-head { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 16px; margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--divider); }
+  .settings-section-head:first-of-type { margin-top: 0; }
+  .settings-row { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px dashed var(--divider); }
+  .settings-row:last-of-type { border-bottom: none; }
+  .settings-label { font-weight: 800; font-size: 15px; }
+  .settings-help { color: var(--muted); font-weight: 500; font-size: 13px; margin-top: 4px; line-height: 1.5; }
+  .settings-help a { color: var(--peach-deep); text-decoration: underline; }
+  .settings-row input[type="text"],
+  .settings-row input[type="time"],
+  .settings-row input[type="password"] {
+    background: var(--card-tint);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    width: 100%;
+    max-width: 320px;
+    color: var(--ink);
+  }
+  .settings-row input:focus { outline: 2px solid var(--peach); outline-offset: -1px; border-color: transparent; }
+
+  .setup-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+  .setup-card { max-width: 580px; width: 100%; background: var(--card); border-radius: var(--radius-xl); padding: 32px 36px; box-shadow: var(--shadow-lg); }
+  .setup-card h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 32px; text-align: center; margin-bottom: 6px; letter-spacing: -0.02em; }
+  .setup-card .lead { text-align: center; color: var(--ink-soft); font-weight: 600; font-size: 15px; margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--divider); }
+  .setup-field { margin-bottom: 16px; }
+  .setup-field label { display: block; font-weight: 800; font-size: 12px; color: var(--ink); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .setup-field input {
+    width: 100%;
+    background: var(--card-tint);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .setup-field input:focus { outline: 2px solid var(--peach); outline-offset: -1px; border-color: transparent; }
+  .setup-help { color: var(--muted); font-weight: 500; font-size: 13px; margin-top: 4px; line-height: 1.5; }
+  .setup-help a { color: var(--peach-deep); text-decoration: underline; }
+  .setup-error {
+    background: var(--peach-soft);
+    border: 1.5px solid var(--peach);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--peach-deep);
+    margin-bottom: 14px;
+    word-break: break-word;
+  }
+  .setup-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--divider); }
+  details.setup-howto {
+    margin: 8px 0 16px;
+    padding: 14px 16px;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-md);
+    background: var(--card-tint);
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  details.setup-howto summary { cursor: pointer; font-weight: 800; color: var(--ink); }
+  details.setup-howto ol { margin: 12px 0 0 20px; }
+  details.setup-howto li { margin-bottom: 6px; }
+  details.setup-howto code { font-family: ui-monospace, monospace; font-size: 12px; background: var(--bg-alt); padding: 2px 6px; border-radius: 4px; }
+  .file-picker {
+    display: inline-block;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .file-picker:hover { border-color: var(--ink); color: var(--ink); }
+  .file-picker input { display: none; }
+  .file-name { font-weight: 700; font-size: 13px; color: var(--mint-deep); margin-left: 8px; }
+
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; gap: 24px; } }
+  @media (max-width: 800px) {
+    .container { padding: 20px 16px 60px; }
+    .header { grid-template-columns: 1fr; padding: 18px 20px; }
+    .header-right { align-items: flex-start; }
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    .subject-info { flex: 1 1 100%; }
+    .subject-progress { flex: 1 1 100%; }
+    .add-form-row { grid-template-columns: 1fr 1fr; }
+    .add-form-row > *:last-child { grid-column: 1 / -1; }
+    .subject-edit { grid-template-columns: 1fr 1fr; }
+    .subject-edit > *:nth-last-child(-n+2) { grid-column: span 1; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .settings-row { grid-template-columns: 1fr; gap: 8px; }
+    .modal { padding: 20px; }
+    .modal-title { font-size: 22px; }
+    .header-name { font-size: 24px; }
+    .stepper-btn { width: 46px; height: 46px; font-size: 24px; }
+  }
+  @media (max-width: 480px) {
+    .summary { grid-template-columns: 1fr 1fr; }
+    .summary-card { padding: 16px 18px; }
+    .summary-card .value { font-size: 30px; }
+  }
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">Загружается…</div></div>
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+// ----------------------------------------------------------------------------
+// Locale + plural
+// ----------------------------------------------------------------------------
+const LOCALE = 'ru-RU';
+function plural(n, forms) {
+  // forms: ['день', 'дня', 'дней']
+  const a = Math.abs(n);
+  const mod10 = a % 10;
+  const mod100 = a % 100;
+  if (mod100 >= 11 && mod100 <= 14) return forms[2];
+  if (mod10 === 1) return forms[0];
+  if (mod10 >= 2 && mod10 <= 4) return forms[1];
+  return forms[2];
+}
+
+// ----------------------------------------------------------------------------
+// Date helpers
+// ----------------------------------------------------------------------------
+const todayKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+const formatDate = (key) => {
+  const [y, m, d] = key.split('-');
+  return new Date(+y, +m-1, +d).toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+};
+const shortDate = (key) => {
+  const [y, m, d] = key.split('-');
+  return new Date(+y, +m-1, +d).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' });
+};
+const dayLabel = (key) => {
+  const [y, m, d] = key.split('-');
+  const date = new Date(+y, +m-1, +d);
+  return { weekday: date.toLocaleDateString(LOCALE, { weekday: 'short' }).toUpperCase(), num: date.getDate() };
+};
+const shiftDate = (key, days) => {
+  const [y, m, d] = key.split('-');
+  const date = new Date(+y, +m-1, +d);
+  date.setDate(date.getDate() + days);
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+};
+const monthKey = (key) => key.slice(0, 7);
+const daysInMonth = (yyyymm) => {
+  const [y, m] = yyyymm.split('-').map(n => +n);
+  return new Date(y, m, 0).getDate();
+};
+
+// ----------------------------------------------------------------------------
+// Constants
+// ----------------------------------------------------------------------------
+const MOODS = [
+  { key: 'great', emoji: '😄', label: 'Отлично' },
+  { key: 'good',  emoji: '🙂', label: 'Хорошо' },
+  { key: 'okay',  emoji: '😐', label: 'Нормально' },
+  { key: 'tough', emoji: '😟', label: 'Тяжело' },
+];
+
+const DEFAULT_CHECKLIST = [
+  { key: 'on_time',  label: 'Начал вовремя' },
+  { key: 'homework', label: 'Сделал всю домашку' },
+  { key: 'reading',  label: 'Дополнительное чтение' },
+  { key: 'tidy',     label: 'Прибрал рабочее место' },
+  { key: 'kindness', label: 'Помог кому-то сегодня' },
+];
+
+const BADGES = [
+  { min: 30, emoji: '🏆', label: 'Чемпион месяца' },
+  { min: 14, emoji: '💎', label: 'Две недели подряд' },
+  { min: 7,  emoji: '🥇', label: 'Неделя силы' },
+  { min: 3,  emoji: '⭐', label: 'На волне' },
+  { min: 1,  emoji: '🌱', label: 'Начало пути' },
+  { min: 0,  emoji: '✨', label: 'Готов начать' },
+];
+
+// ----------------------------------------------------------------------------
+// Stats helpers
+// ----------------------------------------------------------------------------
+function dayCompletion(progressForDay, subjects) {
+  if (!subjects.length) return 0;
+  return subjects.reduce((sum, s) => {
+    const v = progressForDay?.[s.id] || 0;
+    return sum + Math.min(1, v / Math.max(1, s.target));
+  }, 0) / subjects.length;
+}
+function computeStreak(progress, subjects) {
+  if (!subjects.length) return 0;
+  let streak = 0;
+  let cursor = todayKey();
+  while (true) {
+    const dp = progress[cursor] || {};
+    const allMet = subjects.every(s => (dp[s.id] || 0) >= s.target);
+    if (!allMet) break;
+    streak++;
+    cursor = shiftDate(cursor, -1);
+  }
+  return streak;
+}
+function computeBestStreak(progress, subjects) {
+  if (!subjects.length) return 0;
+  const keys = Object.keys(progress).sort();
+  if (!keys.length) return 0;
+  let best = 0, current = 0;
+  let cursor = keys[0];
+  const end = todayKey();
+  while (cursor <= end) {
+    const dp = progress[cursor] || {};
+    const allMet = subjects.every(s => (dp[s.id] || 0) >= s.target);
+    if (allMet) { current++; if (current > best) best = current; }
+    else current = 0;
+    cursor = shiftDate(cursor, 1);
+  }
+  return best;
+}
+
+function starsFromCompletion(pct) {
+  if (pct >= 1) return 3;
+  if (pct >= 0.66) return 2;
+  if (pct >= 0.33) return 1;
+  return 0;
+}
+function statusForCompletion(pct) {
+  if (pct >= 0.95) return { label: 'Всё готово!', tone: 'mint' };
+  if (pct >= 0.6)  return { label: 'Отлично идёт', tone: 'butter' };
+  if (pct >= 0.3)  return { label: 'Продолжай', tone: 'peach' };
+  return { label: 'Только начало', tone: 'lavender' };
+}
+function badgeForStreak(streak) {
+  return BADGES.find(b => streak >= b.min) || BADGES[BADGES.length - 1];
+}
+function nextBadgeProgress(streak) {
+  const sorted = [...BADGES].sort((a, b) => a.min - b.min);
+  const next = sorted.find(b => b.min > streak);
+  if (!next) return null;
+  const prev = sorted.filter(b => b.min <= streak).pop() || { min: 0 };
+  const span = next.min - prev.min;
+  const have = streak - prev.min;
+  return { next, prev, pct: span > 0 ? have / span : 0, days_left: next.min - streak };
+}
+
+function initialsFor(name) {
+  if (!name) return '✦';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+}
+
+// ----------------------------------------------------------------------------
+// Default data
+// ----------------------------------------------------------------------------
+function defaultData() {
+  return {
+    version: 2,
+    subjects: [
+      { id: 's1', name: 'Математика', icon: '∑',  unit: 'заданий',     target: 10 },
+      { id: 's2', name: 'Английский', icon: 'A',  unit: 'упражнений',  target: 8  },
+      { id: 's3', name: 'Чтение',     icon: '📖', unit: 'страниц',     target: 30 },
+    ],
+    progress: {},
+    notes: {},
+    moods: {},
+    checks: {},
+    settings: { reminder_time: '', child_name: '', class_name: '' },
+  };
+}
+
+// ----------------------------------------------------------------------------
+// UTF-8 ↔ Base64
+// ----------------------------------------------------------------------------
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+function base64ToUtf8(b64) {
+  const binary = atob(b64.replace(/\s/g, ''));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+// ----------------------------------------------------------------------------
+// Profile (URL param ?child=NAME makes this a multi-child friendly URL)
+// ----------------------------------------------------------------------------
+const CHILD_KEY = (() => {
+  try {
+    const u = new URL(window.location.href);
+    return (u.searchParams.get('child') || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  } catch { return ''; }
+})();
+
+// ----------------------------------------------------------------------------
+// GitHub Contents-API store
+// ----------------------------------------------------------------------------
+const CONFIG_KEY = CHILD_KEY ? `sp.gh.config:${CHILD_KEY}` : 'sp.gh.config';
+function loadConfig() {
+  try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null'); }
+  catch { return null; }
+}
+function saveConfig(cfg) { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); }
+function clearConfig() { localStorage.removeItem(CONFIG_KEY); }
+
+class GhStore {
+  constructor(cfg) { this.cfg = cfg; this.sha = null; }
+  get url() {
+    const { owner, repo, path, branch } = this.cfg;
+    const params = branch ? `?ref=${encodeURIComponent(branch)}` : '';
+    return `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodeURI(path)}${params}`;
+  }
+  get headers() {
+    return {
+      Authorization: `Bearer ${this.cfg.token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    };
+  }
+  async testConnection() {
+    const res = await fetch(this.url, { headers: this.headers });
+    if (res.status === 200 || res.status === 404) return { ok: true, exists: res.status === 200 };
+    if (res.status === 401) throw new Error('Токен не принят (401). Создай токен заново или проверь, что он скопирован верно.');
+    if (res.status === 403) {
+      const text = await res.text();
+      throw new Error('Нет доступа (403). У токена должны быть права Contents: Read and write для этого репозитория. ' + text.slice(0, 200));
+    }
+    throw new Error(`Неожиданный ответ ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+  async load() {
+    const res = await fetch(this.url, { headers: this.headers });
+    if (res.status === 404) { this.sha = null; return defaultData(); }
+    if (!res.ok) throw new Error(`Ошибка загрузки из GitHub (${res.status}): ${(await res.text()).slice(0, 300)}`);
+    const j = await res.json();
+    this.sha = j.sha;
+    let text;
+    if (j.encoding === 'base64' && j.content) text = base64ToUtf8(j.content);
+    else if (j.download_url) text = await (await fetch(j.download_url)).text();
+    else throw new Error('Неподдерживаемая кодировка файла из GitHub.');
+    let parsed;
+    try { parsed = JSON.parse(text); }
+    catch (e) { throw new Error('В файле некорректный JSON: ' + e.message); }
+    const d = defaultData();
+    return {
+      version: parsed.version || 1,
+      subjects: parsed.subjects || d.subjects,
+      progress: parsed.progress || {},
+      notes: parsed.notes || {},
+      moods: parsed.moods || {},
+      checks: parsed.checks || {},
+      settings: { ...d.settings, ...(parsed.settings || {}) },
+    };
+  }
+  async refreshSha() {
+    const res = await fetch(this.url, { headers: this.headers });
+    if (res.status === 404) {
+      this.sha = null;
+      return null;
+    }
+    if (!res.ok) {
+      throw new Error(`Ошибка проверки файла в GitHub (${res.status}): ${(await res.text()).slice(0, 300)}`);
+    }
+    const j = await res.json();
+    this.sha = j.sha || null;
+    return this.sha;
+  }
+  async save(data, message) {
+    // GitHub requires the current SHA when updating an existing file.
+    // Refresh it before each write so token/config changes and stale tabs do not
+    // cause 422 "sha wasn't supplied" errors.
+    await this.refreshSha();
+
+    const body = {
+      message: message || `Обновление прогресса · ${new Date().toISOString().slice(0, 19).replace('T', ' ')}`,
+      content: utf8ToBase64(JSON.stringify(data, null, 2)),
+    };
+    if (this.sha) body.sha = this.sha;
+    if (this.cfg.branch) body.branch = this.cfg.branch;
+
+    const headers = { ...this.headers, 'Content-Type': 'application/json' };
+    let res = await fetch(this.url, { method: 'PUT', headers, body: JSON.stringify(body) });
+
+    // If another tab/device changed the file between our SHA check and PUT,
+    // refresh the SHA and retry once.
+    if (res.status === 409 || res.status === 422) {
+      await this.refreshSha();
+      if (this.sha) body.sha = this.sha;
+      else delete body.sha;
+      res = await fetch(this.url, { method: 'PUT', headers, body: JSON.stringify(body) });
+    }
+
+    if (!res.ok) {
+      throw new Error(`Ошибка сохранения в GitHub (${res.status}): ${(await res.text()).slice(0, 300)}`);
+    }
+    const j = await res.json();
+    this.sha = j.content?.sha || this.sha;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Root
+// ----------------------------------------------------------------------------
+function Root() {
+  const [config, setConfig] = useState(loadConfig());
+  if (!config) return <SetupWizard onSaved={(c) => setConfig(c)} />;
+  return <App
+    config={config}
+    onClearConfig={() => { clearConfig(); setConfig(null); }}
+    onUpdateConfig={(c) => { saveConfig(c); setConfig(c); }}
+  />;
+}
+
+// ----------------------------------------------------------------------------
+// App
+// ----------------------------------------------------------------------------
+function App({ config, onClearConfig, onUpdateConfig }) {
+  const storeRef = useRef(new GhStore(config));
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [saveStatus, setSaveStatus] = useState('saved');
+  const [saveError, setSaveError] = useState('');
+  const [data, setData] = useState({ subjects: [], progress: {}, notes: {}, moods: {}, checks: {}, settings: {} });
+  const [activeDate, setActiveDate] = useState(todayKey());
+  const [toast, setToast] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [showStats, setShowStats] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const saveTimer = useRef(null);
+
+  useEffect(() => { storeRef.current = new GhStore(config); }, [config]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const d = await storeRef.current.load();
+        setData(d);
+        setLoaded(true);
+      } catch (e) { setLoadError(String(e.message || e)); }
+    })();
+  }, []);
+
+  useEffect(() => {
+    const now = new Date();
+    const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
+    const t = setTimeout(() => setActiveDate(todayKey()), nextMidnight - now);
+    return () => clearTimeout(t);
+  }, [activeDate]);
+
+  const scheduleSave = useCallback((next) => {
+    setSaveStatus('saving'); setSaveError('');
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await storeRef.current.save(next);
+        setSaveStatus('saved');
+      } catch (e) {
+        console.error('save failed:', e);
+        setSaveStatus('error');
+        setSaveError(String(e.message || e));
+      }
+    }, 3000);
+  }, []);
+
+  const update = (mutator) => {
+    setData(prev => {
+      const next = mutator(prev);
+      scheduleSave(next);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const beforeUnload = (e) => {
+      if (saveStatus === 'saving') {
+        e.preventDefault();
+        e.returnValue = 'Изменения ещё сохраняются. Уйти всё равно?';
+      }
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => window.removeEventListener('beforeunload', beforeUnload);
+  }, [saveStatus]);
+
+  const todayProgress = data.progress[activeDate] || {};
+  const todayNote = data.notes[activeDate] || '';
+  const todayMood = data.moods[activeDate] || '';
+  const todayChecks = data.checks[activeDate] || {};
+
+  const setSubjectProgress = (subjectId, value) => {
+    const v = Math.max(0, parseInt(value) || 0);
+    update(prev => ({
+      ...prev,
+      progress: { ...prev.progress, [activeDate]: { ...(prev.progress[activeDate] || {}), [subjectId]: v } },
+    }));
+  };
+  const stepProgress = (subjectId, delta) => {
+    const cur = todayProgress[subjectId] || 0;
+    setSubjectProgress(subjectId, cur + delta);
+  };
+  const setNoteForActive = (txt) => {
+    update(prev => {
+      const notes = { ...prev.notes };
+      if (txt) notes[activeDate] = txt; else delete notes[activeDate];
+      return { ...prev, notes };
+    });
+  };
+  const setMoodForActive = (mood) => {
+    update(prev => {
+      const moods = { ...prev.moods };
+      if (mood) moods[activeDate] = mood; else delete moods[activeDate];
+      return { ...prev, moods };
+    });
+  };
+  const toggleCheck = (key) => {
+    update(prev => {
+      const checks = { ...prev.checks };
+      const day = { ...(checks[activeDate] || {}) };
+      day[key] = !day[key];
+      if (!day[key]) delete day[key];
+      checks[activeDate] = day;
+      return { ...prev, checks };
+    });
+  };
+  const addSubject = (s) => {
+    const newSubj = { id: 's' + Date.now(), ...s };
+    update(prev => ({ ...prev, subjects: [...prev.subjects, newSubj] }));
+    showToast(`Добавлено: ${s.name}`);
+  };
+  const removeSubject = (id) => {
+    update(prev => ({ ...prev, subjects: prev.subjects.filter(s => s.id !== id) }));
+    showToast('Предмет удалён');
+  };
+  const updateSubject = (id, fields) => {
+    update(prev => ({ ...prev, subjects: prev.subjects.map(s => s.id === id ? { ...s, ...fields } : s) }));
+    showToast('Предмет обновлён');
+  };
+  const reorderSubject = (fromId, toId) => {
+    if (fromId === toId) return;
+    update(prev => {
+      const list = [...prev.subjects];
+      const fromIdx = list.findIndex(s => s.id === fromId);
+      const toIdx = list.findIndex(s => s.id === toId);
+      if (fromIdx < 0 || toIdx < 0) return prev;
+      const [moved] = list.splice(fromIdx, 1);
+      list.splice(toIdx, 0, moved);
+      return { ...prev, subjects: list };
+    });
+  };
+  const markComplete = (subjectId) => {
+    const subj = data.subjects.find(s => s.id === subjectId);
+    if (!subj) return;
+    setSubjectProgress(subjectId, subj.target);
+  };
+  const updateSettings = (fields) => {
+    update(prev => ({ ...prev, settings: { ...prev.settings, ...fields } }));
+  };
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 1800); };
+  const flushSave = async () => {
+    if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+    setSaveStatus('saving');
+    try {
+      await storeRef.current.save(data, 'Ручное сохранение');
+      setSaveStatus('saved'); setSaveError(''); showToast('Сохранено');
+    } catch (e) {
+      setSaveStatus('error'); setSaveError(String(e.message || e));
+    }
+  };
+
+  const subjects = data.subjects;
+  const totalCompletion = useMemo(() => dayCompletion(todayProgress, subjects), [todayProgress, subjects]);
+  const completedCount = subjects.filter(s => (todayProgress[s.id] || 0) >= s.target).length;
+  const streak = useMemo(() => computeStreak(data.progress, subjects), [data.progress, subjects]);
+  const stars = starsFromCompletion(totalCompletion);
+  const status = statusForCompletion(totalCompletion);
+  const badge = badgeForStreak(streak);
+  const nextBadge = nextBadgeProgress(streak);
+  const checkedCount = Object.values(todayChecks).filter(Boolean).length;
+
+  const last7 = useMemo(() => {
+    const out = [];
+    for (let i = 6; i >= 0; i--) {
+      const k = shiftDate(todayKey(), -i);
+      const dp = data.progress[k] || {};
+      out.push({ key: k, pct: dayCompletion(dp, subjects), ...dayLabel(k) });
+    }
+    return out;
+  }, [data.progress, subjects]);
+
+  const history = useMemo(() => {
+    const out = [];
+    for (let i = 1; i <= 14; i++) {
+      const k = shiftDate(todayKey(), -i);
+      const dp = data.progress[k];
+      if (!dp) continue;
+      const pct = dayCompletion(dp, subjects);
+      if (pct > 0) out.push({ key: k, pct });
+    }
+    return out;
+  }, [data.progress, subjects]);
+
+  useReminder(data.settings.reminder_time);
+
+  if (loadError) {
+    return (
+      <div className="loading">
+        <div>
+          Не удалось загрузить данные.
+          <div className="err">{loadError}</div>
+          <div style={{ marginTop: 14 }}>
+            <button className="btn" onClick={() => window.location.reload()}>Повторить</button>
+            {' '}
+            <button className="btn danger" onClick={onClearConfig}>Сбросить настройки GitHub</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (!loaded) return <div className="loading">Загружаем твою панель…</div>;
+
+  const childName = (data.settings.child_name || '').trim() || 'Друг';
+  const className = (data.settings.class_name || '').trim();
+
+  return (
+    <div className="container">
+      <header className="header">
+        <div className="header-left">
+          <div className="avatar">{initialsFor(childName)}</div>
+          <div style={{ minWidth: 0 }}>
+            <div className="header-name">Прогресс — {childName}</div>
+            <div className="header-meta">
+              <span>{formatDate(activeDate)}</span>
+              {className && <><span className="dot"></span><span>{className}</span></>}
+              {todayMood && (() => {
+                const m = MOODS.find(x => x.key === todayMood);
+                return m ? <><span className="dot"></span><span>{m.emoji} {m.label}</span></> : null;
+              })()}
+            </div>
+          </div>
+        </div>
+        <div className="header-right">
+          <span className={`pill ${status.tone}`}>{status.label} · {Math.round(totalCompletion * 100)}%</span>
+          <div className="header-actions">
+            <SaveIndicator status={saveStatus} error={saveError} />
+            <button className="btn" onClick={() => setShowStats(true)}>Статистика</button>
+            <button className="btn" onClick={() => setShowSettings(true)}>Настройки</button>
+          </div>
+        </div>
+      </header>
+
+      <div className="date-strip">
+        <div className="date-strip-left">
+          <div>
+            <div className="date-label">{activeDate === todayKey() ? 'Сегодня' : 'Просмотр'}</div>
+            <div className="date-iso">{shortDate(activeDate)}</div>
+          </div>
+        </div>
+        <div className="date-nav">
+          <button className="btn icon" onClick={() => setActiveDate(shiftDate(activeDate, -1))} title="Предыдущий день">‹</button>
+          <input
+            type="date"
+            value={activeDate}
+            max={todayKey()}
+            onChange={(e) => e.target.value && setActiveDate(e.target.value)}
+          />
+          <button
+            className="btn icon"
+            onClick={() => setActiveDate(shiftDate(activeDate, 1))}
+            disabled={activeDate >= todayKey()}
+            title="Следующий день"
+          >›</button>
+          {activeDate !== todayKey() && (
+            <button className="btn" onClick={() => setActiveDate(todayKey())}>Сегодня</button>
+          )}
+        </div>
+      </div>
+
+      <div className="summary">
+        <div className="summary-card peach">
+          <div className="ring"></div>
+          <div className="label">Настроение</div>
+          <div className="mood-row">
+            {MOODS.map(m => (
+              <button
+                key={m.key}
+                className={`mood-btn ${todayMood === m.key ? 'active' : ''}`}
+                onClick={() => setMoodForActive(todayMood === m.key ? '' : m.key)}
+                title={m.label}
+              >{m.emoji}</button>
+            ))}
+          </div>
+          {todayMood && <div className="mood-label">{MOODS.find(x => x.key === todayMood)?.label}</div>}
+        </div>
+
+        <div className="summary-card mint">
+          <div className="ring"></div>
+          <div className="label">Выполнено задач</div>
+          <div className="value">{completedCount}<span className="unit">из {subjects.length}</span></div>
+        </div>
+
+        <div className="summary-card butter">
+          <div className="ring"></div>
+          <div className="label">Сегодня выполнено</div>
+          <div className="value">{Math.round(totalCompletion * 100)}<span className="unit">%</span></div>
+        </div>
+
+        <div className="summary-card lavender">
+          <div className="ring"></div>
+          <div className="label">Звёзды за день</div>
+          <div className="star-row">
+            {[0,1,2].map(i => (
+              <span key={i} className={`star ${i < stars ? 'filled pop' : ''}`}>★</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid">
+        <main>
+          <div className="section">
+            <div className="section-head">
+              <h2>Сегодняшние задачи</h2>
+              <span className="meta">Нажми + или − чтобы изменить</span>
+            </div>
+
+            <div className="subjects">
+              {subjects.length === 0 ? (
+                <div className="card empty">
+                  <div className="empty-icon">📚</div>
+                  Пока нет предметов. Добавь один ниже, чтобы начать.
+                </div>
+              ) : (
+                subjects.map(s => (
+                  <SubjectRow
+                    key={s.id}
+                    subject={s}
+                    value={todayProgress[s.id] || 0}
+                    editing={editingId === s.id}
+                    onStartEdit={() => setEditingId(s.id)}
+                    onCancelEdit={() => setEditingId(null)}
+                    onChange={(v) => setSubjectProgress(s.id, v)}
+                    onStep={(d) => stepProgress(s.id, d)}
+                    onComplete={() => markComplete(s.id)}
+                    onRemove={() => {
+                      if (confirm(`Удалить «${s.name}»? История прошлых дней сохранится.`)) removeSubject(s.id);
+                    }}
+                    onSaveEdit={(fields) => { updateSubject(s.id, fields); setEditingId(null); }}
+                    onReorder={reorderSubject}
+                  />
+                ))
+              )}
+            </div>
+
+            <AddForm onAdd={addSubject} />
+          </div>
+
+          <div className="section">
+            <div className="section-head">
+              <h2>Ежедневный чек-лист</h2>
+              <span className="meta">Выполнено {checkedCount} из {DEFAULT_CHECKLIST.length}</span>
+            </div>
+            <div className="checklist">
+              {DEFAULT_CHECKLIST.map(item => {
+                const done = !!todayChecks[item.key];
+                return (
+                  <div
+                    key={item.key}
+                    className={`checklist-item ${done ? 'done' : ''}`}
+                    onClick={() => toggleCheck(item.key)}
+                    role="checkbox"
+                    aria-checked={done}
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleCheck(item.key); } }}
+                  >
+                    <div className="checklist-check">{done ? '✓' : ''}</div>
+                    <div className="checklist-label">{item.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="notes-card">
+            <h3>Заметка на {shortDate(activeDate)}</h3>
+            <textarea
+              placeholder="Что ты сегодня делал? Было что-то сложное или интересное?"
+              value={todayNote}
+              onChange={(e) => setNoteForActive(e.target.value)}
+            />
+            <div className="meta">Символов: {todayNote.length} · сохраняется автоматически</div>
+          </div>
+        </main>
+
+        <aside className="sidebar">
+          <div className="reward">
+            <div className="reward-stars">
+              {[0,1,2].map(i => (
+                <span key={i} className={`star ${i < stars ? 'filled' : ''}`}>★</span>
+              ))}
+            </div>
+            <div className="reward-message">
+              {stars === 3 ? 'Отличный день!' :
+               stars === 2 ? 'Хорошая работа!' :
+               stars === 1 ? 'Хороший прогресс!' :
+               'Давай начнём!'}
+            </div>
+            <div className="reward-sub">
+              {stars === 3 ? 'Ты всё выполнил.' :
+               stars === 2 ? 'Ты почти у цели.' :
+               stars === 1 ? 'Продолжай, у тебя получится.' :
+               'Выбери задачу и начни с малого.'}
+            </div>
+            <div className="reward-badge">
+              <span className="emoji">{badge.emoji}</span>
+              {streak} {plural(streak, ['день', 'дня', 'дней'])} подряд · {badge.label}
+            </div>
+            {nextBadge && (
+              <div className="reward-progress">
+                <div className="label">Следующая награда: {nextBadge.next.emoji} {nextBadge.next.label}</div>
+                <div className="bar"><div className="bar-fill" style={{ width: (nextBadge.pct * 100) + '%' }}></div></div>
+                <div className="text">Осталось {nextBadge.days_left} {plural(nextBadge.days_left, ['день', 'дня', 'дней'])}</div>
+              </div>
+            )}
+          </div>
+
+          <div className="card">
+            <div className="section-head">
+              <h2 className="h-section">Эта неделя</h2>
+              <span className="meta" style={{ color: 'var(--muted)', fontSize: 13, fontWeight: 600 }}>Последние 7 дней</span>
+            </div>
+            <div className="week-grid">
+              {last7.map(d => (
+                <div
+                  key={d.key}
+                  className={`week-day ${d.key === todayKey() ? 'today' : ''} ${d.key === activeDate ? 'active' : ''}`}
+                  onClick={() => setActiveDate(d.key)}
+                  title={`${formatDate(d.key)} — ${Math.round(d.pct*100)}%`}
+                >
+                  <div className="week-day-label">{d.weekday}</div>
+                  <div className="week-day-num">{d.num}</div>
+                  <div className="week-day-bar">
+                    <div className={`week-day-bar-fill ${d.pct >= 1 ? 'full' : ''}`} style={{ width: (d.pct * 100) + '%' }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="section-head">
+              <h2 className="h-section">Прошлые дни</h2>
+              <span className="meta" style={{ color: 'var(--muted)', fontSize: 13, fontWeight: 600 }}>Последние 14 дней</span>
+            </div>
+            <div className="history-list">
+              {history.length === 0 ? (
+                <div className="empty" style={{ padding: '20px 0' }}>Пока ничего не записано.</div>
+              ) : (
+                history.map(h => (
+                  <div key={h.key} className="history-item" onClick={() => setActiveDate(h.key)}>
+                    <span className="history-date">{shortDate(h.key)}</span>
+                    <div className="history-bar">
+                      <div className={`history-bar-fill ${h.pct >= 1 ? 'full' : ''}`} style={{ width: (h.pct * 100) + '%' }}></div>
+                    </div>
+                    <span className="history-pct">{Math.round(h.pct * 100)}%</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <footer className="footer">
+        <span>Сохранено в {config.owner}/{config.repo}</span>
+        <span>Сделано с заботой</span>
+      </footer>
+
+      <div className={`toast ${toast ? 'show' : ''}`}>{toast}</div>
+
+      {showStats && (
+        <StatsModal
+          progress={data.progress}
+          subjects={subjects}
+          onClose={() => setShowStats(false)}
+          onPickDate={(k) => { setActiveDate(k); setShowStats(false); }}
+        />
+      )}
+      {showSettings && (
+        <SettingsModal
+          settings={data.settings}
+          config={config}
+          onSave={updateSettings}
+          onUpdateConfig={onUpdateConfig}
+          onClearConfig={onClearConfig}
+          onClose={() => setShowSettings(false)}
+          dataSnapshot={data}
+          saveStatus={saveStatus}
+          saveError={saveError}
+          onFlush={flushSave}
+        />
+      )}
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+function SaveIndicator({ status, error }) {
+  const label =
+    status === 'saving' ? 'Сохраняем…' :
+    status === 'error'  ? 'Не удалось сохранить' :
+    'Сохранено';
+  return (
+    <span className={`save-status ${status}`} title={error || ''}>
+      <span className="dot"></span>{label}
+    </span>
+  );
+}
+
+// ----------------------------------------------------------------------------
+function SubjectRow({ subject, value, editing, onStartEdit, onCancelEdit, onSaveEdit, onChange, onStep, onComplete, onRemove, onReorder }) {
+  const s = subject;
+  const pct = Math.min(100, (value / Math.max(1, s.target)) * 100);
+  const complete = value >= s.target;
+  const [dragging, setDragging] = useState(false);
+  const [over, setOver] = useState(false);
+
+  const [icon, setIcon] = useState(s.icon);
+  const [name, setName] = useState(s.name);
+  const [target, setTarget] = useState(String(s.target));
+  const [unit, setUnit] = useState(s.unit);
+
+  useEffect(() => {
+    if (editing) { setIcon(s.icon); setName(s.name); setTarget(String(s.target)); setUnit(s.unit); }
+  }, [editing, s.id]);
+
+  const handleSave = () => {
+    if (!name.trim() || !unit.trim()) return;
+    onSaveEdit({
+      icon: (icon.trim() || '✦').slice(0, 2),
+      name: name.trim(),
+      target: Math.max(1, parseInt(target) || 1),
+      unit: unit.trim(),
+    });
+  };
+
+  return (
+    <div
+      className={`subject ${complete ? 'complete' : ''} ${dragging ? 'dragging' : ''} ${over ? 'drag-over' : ''}`}
+      onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => {
+        setOver(false);
+        const fromId = e.dataTransfer.getData('text/plain');
+        if (fromId && fromId !== s.id) onReorder(fromId, s.id);
+      }}
+    >
+      <div
+        className="drag-handle"
+        draggable
+        onDragStart={(e) => { setDragging(true); e.dataTransfer.setData('text/plain', s.id); e.dataTransfer.effectAllowed = 'move'; }}
+        onDragEnd={() => setDragging(false)}
+        title="Перетащи, чтобы поменять порядок"
+      >⋮⋮</div>
+      <div className="subject-icon">{s.icon}</div>
+      <div className="subject-info">
+        <div className="subject-name">{s.name}</div>
+        <div className="subject-meta">
+          Цель: {s.target} {s.unit}
+          <span className="pct">{Math.round(pct)}%</span>
+        </div>
+      </div>
+      <div className="subject-progress">
+        <button className="stepper-btn" onClick={() => onStep(-1)} title="Меньше" disabled={value <= 0}>−</button>
+        <input
+          type="number"
+          inputMode="numeric"
+          min="0"
+          className="progress-input"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={(e) => e.target.select()}
+        />
+        <button className="stepper-btn" onClick={() => onStep(1)} title="Больше">+</button>
+        <span className="progress-of">из</span>
+        <span className="progress-target">{s.target}</span>
+        <span className="progress-unit">{s.unit}</span>
+        <div className="progress-bar"><div className="progress-fill" style={{ width: pct + '%' }}></div></div>
+      </div>
+      <div className="subject-actions">
+        <button className="icon-btn" title={complete ? 'Готово!' : 'Отметить выполненным'} onClick={onComplete} disabled={complete}>✓</button>
+        <button className="icon-btn" title="Изменить" onClick={editing ? onCancelEdit : onStartEdit}>{editing ? '×' : '✎'}</button>
+        <button className="icon-btn danger" title="Удалить" onClick={onRemove}>✕</button>
+      </div>
+
+      {editing && (
+        <div className="subject-edit">
+          <input type="text" value={icon} onChange={e => setIcon(e.target.value)} maxLength="2" style={{ textAlign: 'center' }} placeholder="Иконка" />
+          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Название" />
+          <input type="number" value={target} onChange={e => setTarget(e.target.value)} min="1" placeholder="Цель" />
+          <input type="text" value={unit} onChange={e => setUnit(e.target.value)} placeholder="Единица" />
+          <button className="btn primary" onClick={handleSave}>Сохранить</button>
+          <button className="btn" onClick={onCancelEdit}>Отмена</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+function AddForm({ onAdd }) {
+  const [icon, setIcon] = useState('✦');
+  const [name, setName] = useState('');
+  const [target, setTarget] = useState('');
+  const [unit, setUnit] = useState('');
+
+  const submit = () => {
+    if (!name.trim() || !target || !unit.trim()) return;
+    onAdd({
+      icon: (icon.trim() || '✦').slice(0, 2),
+      name: name.trim(),
+      target: Math.max(1, parseInt(target) || 1),
+      unit: unit.trim()
+    });
+    setIcon('✦'); setName(''); setTarget(''); setUnit('');
+  };
+
+  return (
+    <div className="add-form">
+      <div className="add-form-title">Добавить новый предмет</div>
+      <div className="add-form-row">
+        <input type="text" placeholder="Иконка" value={icon} onChange={e => setIcon(e.target.value)} maxLength="2" style={{ textAlign: 'center' }} />
+        <input type="text" placeholder="Название (напр. Игра на пианино)" value={name} onChange={e => setName(e.target.value)} />
+        <input type="number" placeholder="Цель" value={target} onChange={e => setTarget(e.target.value)} min="1" />
+        <input type="text" placeholder="Единица (напр. минут)" value={unit} onChange={e => setUnit(e.target.value)} />
+        <button className="btn primary" onClick={submit}>Добавить +</button>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+function StatsModal({ progress, subjects, onClose, onPickDate }) {
+  const [month, setMonth] = useState(monthKey(todayKey()));
+
+  const shiftMonth = (delta) => {
+    const [y, m] = month.split('-').map(n => +n);
+    const d = new Date(y, m - 1 + delta, 1);
+    setMonth(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  };
+
+  const daysCount = daysInMonth(month);
+  const cells = [];
+  const firstDow = (new Date(+month.slice(0,4), +month.slice(5,7) - 1, 1).getDay() + 6) % 7;
+  for (let i = 0; i < firstDow; i++) cells.push({ empty: true });
+  for (let d = 1; d <= daysCount; d++) {
+    const key = `${month}-${String(d).padStart(2,'0')}`;
+    const dp = progress[key];
+    const pct = dp ? dayCompletion(dp, subjects) : 0;
+    cells.push({ key, pct, num: d, hasData: !!dp });
+  }
+
+  let totalPctSum = 0, daysWithData = 0, perfectDays = 0;
+  cells.forEach(c => {
+    if (c.empty || !c.hasData) return;
+    daysWithData++;
+    totalPctSum += c.pct;
+    if (c.pct >= 1) perfectDays++;
+  });
+  const avgPct = daysWithData ? totalPctSum / daysWithData : 0;
+
+  const subjectMonthly = subjects.map(s => {
+    let total = 0, target = 0;
+    cells.forEach(c => {
+      if (c.empty || !c.hasData) return;
+      total += (progress[c.key] || {})[s.id] || 0;
+      target += s.target;
+    });
+    return { ...s, total, target, pct: target ? Math.min(1, total/target) : 0 };
+  });
+
+  const bestStreak = useMemo(() => computeBestStreak(progress, subjects), [progress, subjects]);
+
+  return (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal">
+        <div className="modal-head">
+          <h2 className="modal-title">Статистика</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stats-card">
+            <div className="label">В среднем</div>
+            <div className="value">{Math.round(avgPct * 100)}<span className="unit">%</span></div>
+          </div>
+          <div className="stats-card">
+            <div className="label">Идеальные дни</div>
+            <div className="value">{perfectDays}<span className="unit">в этом месяце</span></div>
+          </div>
+          <div className="stats-card">
+            <div className="label">Лучшая серия</div>
+            <div className="value">{bestStreak}<span className="unit">{plural(bestStreak, ['день', 'дня', 'дней'])}</span></div>
+          </div>
+        </div>
+
+        <div className="stats-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h3 style={{ margin: 0, padding: 0, border: 'none', textTransform: 'capitalize' }}>{new Date(+month.slice(0,4), +month.slice(5,7)-1, 1).toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' })}</h3>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button className="btn icon" onClick={() => shiftMonth(-1)}>‹</button>
+              <button className="btn icon" onClick={() => shiftMonth(1)} disabled={month >= monthKey(todayKey())}>›</button>
+            </div>
+          </div>
+          <div className="month-grid">
+            {['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'].map((d, i) => (
+              <div key={'h'+i} style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 700, fontSize: 10, textAlign: 'center', color: 'var(--muted)', paddingBottom: 4 }}>{d}</div>
+            ))}
+            {cells.map((c, i) => c.empty
+              ? <div key={'e'+i} className="month-cell empty"></div>
+              : (
+                <div
+                  key={c.key}
+                  className={`month-cell ${c.pct >= 1 ? 'full' : ''}`}
+                  onClick={() => c.hasData && onPickDate(c.key)}
+                  title={`${c.key} — ${Math.round(c.pct*100)}%`}
+                >
+                  <div className="fill" style={{ height: (c.pct * 100) + '%' }}></div>
+                  <span className="num">{c.num}</span>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+
+        <div className="stats-section">
+          <h3>По предметам (за месяц)</h3>
+          {subjectMonthly.length === 0 ? (
+            <div className="empty">Пока нет предметов.</div>
+          ) : (
+            <div className="subject-stats">
+              {subjectMonthly.map(s => (
+                <div key={s.id}>
+                  <div className="subj-stat-row">
+                    <div className="subj-stat-icon">{s.icon}</div>
+                    <div>
+                      <div className="subj-stat-name">{s.name}</div>
+                      <div className="subj-stat-bar"><div className="subj-stat-bar-fill" style={{ width: (s.pct*100) + '%' }}></div></div>
+                    </div>
+                    <div className="subj-stat-pct">{s.total} / {s.target} {s.unit}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+function SettingsModal({ settings, config, onSave, onUpdateConfig, onClearConfig, onClose, dataSnapshot, saveStatus, saveError, onFlush }) {
+  const [name, setName] = useState(settings.child_name || '');
+  const [klass, setKlass] = useState(settings.class_name || '');
+  const [reminder, setReminder] = useState(settings.reminder_time || '');
+  const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'unsupported');
+
+  const [owner, setOwner] = useState(config.owner);
+  const [repo, setRepo]   = useState(config.repo);
+  const [path, setPath]   = useState(config.path);
+  const [token, setToken] = useState(config.token);
+  const [revealToken, setRevealToken] = useState(false);
+  const [ghError, setGhError] = useState('');
+  const [ghOk, setGhOk] = useState('');
+
+  const requestNotif = async () => {
+    if (typeof Notification === 'undefined') return;
+    const p = await Notification.requestPermission();
+    setNotifPerm(p);
+    if (p === 'granted') new Notification('Напоминания включены', { body: 'Каждый день в указанное время будет уведомление.' });
+  };
+
+  const saveAll = () => {
+    onSave({ child_name: name.trim(), class_name: klass.trim(), reminder_time: reminder });
+    onClose();
+  };
+
+  const exportJson = () => {
+    const blob = new Blob([JSON.stringify(dataSnapshot, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `progress-backup-${todayKey()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const testAndSaveGh = async () => {
+    setGhError(''); setGhOk('');
+    const cfg = { owner: owner.trim(), repo: repo.trim(), path: path.trim() || 'data.json', token: token.trim() };
+    try {
+      const probe = new GhStore(cfg);
+      await probe.testConnection();
+      onUpdateConfig(cfg);
+      setGhOk('Сохранено. Будет использоваться при следующем сохранении.');
+    } catch (e) { setGhError(String(e.message || e)); }
+  };
+
+  const reset = () => {
+    if (confirm('Забыть настройки GitHub в ЭТОМ браузере? Данные на GitHub останутся. Можно ввести токен снова в любой момент.')) {
+      onClearConfig();
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal">
+        <div className="modal-head">
+          <h2 className="modal-title">Настройки</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="settings-section-head">Общие</div>
+
+        <div className="settings-row">
+          <div>
+            <div className="settings-label">Имя ребёнка</div>
+            <div className="settings-help">Показывается в заголовке. Оставь пустым, если не нужно.</div>
+          </div>
+          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="напр. Лёва" />
+        </div>
+
+        <div className="settings-row">
+          <div>
+            <div className="settings-label">Класс</div>
+            <div className="settings-help">Необязательно. Показывается рядом с датой (напр. «4 класс»).</div>
+          </div>
+          <input type="text" value={klass} onChange={e => setKlass(e.target.value)} placeholder="напр. 4 класс" />
+        </div>
+
+        <div className="settings-row">
+          <div>
+            <div className="settings-label">Ежедневное напоминание</div>
+            <div className="settings-help">
+              Уведомление в браузере в указанное время. Оставь пустым, чтобы отключить.
+              {notifPerm !== 'granted' && notifPerm !== 'unsupported' && (
+                <> · <a href="#" onClick={e => { e.preventDefault(); requestNotif(); }}>Включить уведомления</a></>
+              )}
+              {notifPerm === 'unsupported' && <> · Не поддерживается в этом браузере</>}
+            </div>
+          </div>
+          <input type="time" value={reminder} onChange={e => setReminder(e.target.value)} />
+        </div>
+
+        <div className="settings-section-head">Хранилище (GitHub)</div>
+
+        <div className="settings-row">
+          <div>
+            <div className="settings-label">Репозиторий</div>
+            <div className="settings-help">Владелец / репозиторий. Здесь хранится файл с данными.</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', maxWidth: 320 }}>
+            <input type="text" value={owner} onChange={e => setOwner(e.target.value)} placeholder="владелец" style={{ flex: 1 }} />
+            <span style={{ color: 'var(--muted)' }}>/</span>
+            <input type="text" value={repo} onChange={e => setRepo(e.target.value)} placeholder="репозиторий" style={{ flex: 1 }} />
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <div>
+            <div className="settings-label">Путь к файлу</div>
+            <div className="settings-help">Путь к файлу в репозитории, обычно <code style={{ fontFamily: "ui-monospace, monospace", fontSize: 12 }}>data.json</code>.</div>
+          </div>
+          <input type="text" value={path} onChange={e => setPath(e.target.value)} placeholder="data.json" />
+        </div>
+
+        <div className="settings-row">
+          <div>
+            <div className="settings-label">Персональный токен</div>
+            <div className="settings-help">
+              Хранится только в этом браузере. <a href="#" onClick={e => { e.preventDefault(); setRevealToken(v => !v); }}>{revealToken ? 'Скрыть' : 'Показать'}</a>
+            </div>
+          </div>
+          <input type={revealToken ? 'text' : 'password'} value={token} onChange={e => setToken(e.target.value)} placeholder="github_pat_…" />
+        </div>
+
+        {ghError && <div className="setup-error" style={{ marginTop: 8 }}>{ghError}</div>}
+        {ghOk && <div className="setup-error" style={{ marginTop: 8, color: 'var(--mint-deep)', borderColor: 'var(--mint)', background: 'var(--mint-soft)' }}>{ghOk}</div>}
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+          <button className="btn" onClick={testAndSaveGh}>Проверить и сохранить</button>
+        </div>
+
+        <div className="settings-section-head">Синхронизация и копии</div>
+
+        <div className="settings-row">
+          <div>
+            <div className="settings-label">Сохранить сейчас</div>
+            <div className="settings-help">
+              Сразу записать ожидающие изменения, не дожидаясь автосохранения.
+              {saveError && <div style={{ color: 'var(--peach-deep)', marginTop: 4 }}>Последняя ошибка: {saveError}</div>}
+            </div>
+          </div>
+          <button className="btn" onClick={onFlush} disabled={saveStatus === 'saving'} style={{ maxWidth: 200 }}>
+            {saveStatus === 'saving' ? 'Сохраняем…' : 'Сохранить сейчас'}
+          </button>
+        </div>
+
+        <div className="settings-row">
+          <div>
+            <div className="settings-label">Резервная копия</div>
+            <div className="settings-help">Скачать копию данных в формате JSON.</div>
+          </div>
+          <button className="btn" onClick={exportJson} style={{ maxWidth: 200 }}>Экспортировать data.json</button>
+        </div>
+
+        <div className="settings-row">
+          <div>
+            <div className="settings-label">Сбросить устройство</div>
+            <div className="settings-help">Забыть GitHub-токен в ЭТОМ браузере. Данные в GitHub не изменятся.</div>
+          </div>
+          <button className="btn danger" onClick={reset} style={{ maxWidth: 200 }}>Сбросить настройки GitHub</button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 22 }}>
+          <button className="btn" onClick={onClose}>Закрыть</button>
+          <button className="btn primary" onClick={saveAll}>Сохранить настройки</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+function SetupWizard({ onSaved }) {
+  const [owner, setOwner] = useState('');
+  const [repo, setRepo]   = useState('child-progress-data');
+  const [path, setPath]   = useState(CHILD_KEY ? `${CHILD_KEY}.json` : 'data.json');
+  const [token, setToken] = useState('');
+  const [importFile, setImportFile] = useState(null);
+  const [busy, setBusy]   = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async () => {
+    setError(''); setBusy(true);
+    try {
+      const cfg = { owner: owner.trim(), repo: repo.trim(), path: (path.trim() || 'data.json'), token: token.trim() };
+      if (!cfg.owner || !cfg.repo || !cfg.token) throw new Error('Заполни поля: владелец, репозиторий и токен.');
+      const store = new GhStore(cfg);
+      const probe = await store.testConnection();
+
+      if (importFile) {
+        let parsed;
+        try { parsed = JSON.parse(await importFile.text()); }
+        catch (e) { throw new Error('Не удалось прочитать JSON: ' + e.message); }
+        if (probe.exists) {
+          if (confirm(`Файл уже существует по пути ${cfg.path} в ${cfg.owner}/${cfg.repo}. Перезаписать его импортированными данными?`)) {
+            await store.load();
+            await store.save(parsed, 'Импорт из локального data.json');
+          }
+        } else {
+          await store.save(parsed, 'Первоначальный импорт из data.json');
+        }
+      }
+
+      saveConfig(cfg);
+      onSaved(cfg);
+    } catch (e) { setError(String(e.message || e)); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="setup-screen">
+      <div className="setup-card">
+        <h1>Ежедневный прогресс</h1>
+        <div className="lead">
+          Подключитесь к GitHub, чтобы данные надёжно хранились в облаке.
+          {CHILD_KEY && <div style={{ marginTop: 8, fontSize: 13, color: 'var(--peach-deep)', fontWeight: 800 }}>Профиль: {CHILD_KEY}</div>}
+        </div>
+
+        <details className="setup-howto">
+          <summary>Как настроить (примерно 5 минут)</summary>
+          <ol>
+            <li>Создай приватный репозиторий на GitHub для данных, например <code>child-progress-data</code>. Может быть пустым.</li>
+            <li>Создай fine-grained персональный токен здесь: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>.</li>
+            <li>В разделе <em>Repository access</em> выбери «Only select repositories» → выбери репозиторий с данными. В <em>Repository permissions → Contents</em> поставь <strong>Read and write</strong>.</li>
+            <li>Скопируй токен (начинается с <code>github_pat_…</code>) и вставь ниже.</li>
+            <li>Если у тебя уже есть <code>data.json</code>, прикрепи его ниже для импорта.</li>
+          </ol>
+        </details>
+
+        {error && <div className="setup-error">{error}</div>}
+
+        <div className="setup-field">
+          <label>Имя пользователя GitHub</label>
+          <input type="text" value={owner} onChange={e => setOwner(e.target.value)} placeholder="ваш-логин-github" autoFocus />
+        </div>
+        <div className="setup-field">
+          <label>Название репозитория</label>
+          <input type="text" value={repo} onChange={e => setRepo(e.target.value)} placeholder="child-progress-data" />
+        </div>
+        <div className="setup-field">
+          <label>Путь к файлу в репозитории</label>
+          <input type="text" value={path} onChange={e => setPath(e.target.value)} placeholder="data.json" />
+          <div className="setup-help">Где находится JSON в репозитории. <code>data.json</code> в корне подойдёт.</div>
+        </div>
+        <div className="setup-field">
+          <label>Персональный токен</label>
+          <input type="password" value={token} onChange={e => setToken(e.target.value)} placeholder="github_pat_…" autoComplete="off" />
+          <div className="setup-help">Хранится только в этом браузере. Отправляется только в GitHub.</div>
+        </div>
+        <div className="setup-field">
+          <label>Импорт data.json (необязательно)</label>
+          <label className="file-picker">
+            {importFile ? 'Выбрать другой файл…' : 'Выбрать data.json…'}
+            <input type="file" accept="application/json,.json" onChange={e => setImportFile(e.target.files?.[0] || null)} />
+          </label>
+          {importFile && <span className="file-name">{importFile.name}</span>}
+        </div>
+
+        <div className="setup-actions">
+          <button className="btn primary" onClick={submit} disabled={busy}>
+            {busy ? 'Подключаем…' : 'Подключить и сохранить'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+function useReminder(timeHHMM) {
+  useEffect(() => {
+    if (!timeHHMM || typeof Notification === 'undefined') return;
+    if (Notification.permission !== 'granted') return;
+    const STORAGE_KEY = CHILD_KEY ? `sp.lastReminder:${CHILD_KEY}` : 'sp.lastReminder';
+    const tick = () => {
+      const now = new Date();
+      const [hh, mm] = timeHHMM.split(':').map(n => +n);
+      const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0);
+      const last = sessionStorage.getItem(STORAGE_KEY);
+      const stamp = todayKey();
+      if (now >= target && last !== stamp) {
+        sessionStorage.setItem(STORAGE_KEY, stamp);
+        try {
+          new Notification('Время для сегодняшних задач', {
+            body: 'Открой панель и отметь свой прогресс.',
+          });
+        } catch {}
+      }
+    };
+    tick();
+    const id = setInterval(tick, 60 * 1000);
+    return () => clearInterval(id);
+  }, [timeHHMM]);
+}
+
+// ----------------------------------------------------------------------------
+ReactDOM.createRoot(document.getElementById('app')).render(<Root />);
+</script>
+</body>
+</html>

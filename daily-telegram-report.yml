@@ -1,0 +1,153 @@
+name: Daily Telegram Family Progress Report
+
+on:
+  schedule:
+    # Start 15 minutes early because GitHub Actions can delay jobs scheduled on the hour.
+    - cron: "45 17 * * *" # 22:45 Uzbekistan time (UTC+5)
+  workflow_dispatch:
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Send Telegram family report
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ 8995727115:AAHml7qNACN1CXDFrZHQ7UhaxruSJc2_bd0}}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python3 <<'PY'
+          import json
+          import os
+          import datetime
+          import time
+          import urllib.parse
+          import urllib.request
+
+          files = ["data.json", "kid2.json", "kid3.json"]
+
+          # Uzbekistan time: UTC+5. Scheduled runs start a little early and
+          # wait until 23:00 so ordinary GitHub Actions scheduling jitter does
+          # not turn a 23:00 report into a report after midnight.
+          local_now = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
+          if os.environ.get("GITHUB_EVENT_NAME") == "schedule":
+              report_time = local_now.replace(hour=23, minute=0, second=0, microsecond=0)
+              if local_now < report_time:
+                  time.sleep((report_time - local_now).total_seconds())
+                  local_now = datetime.datetime.utcnow() + datetime.timedelta(hours=5)
+
+          # GitHub Actions may run late.
+          # If it runs after midnight but before 06:00,
+          # send the report for the previous calendar day.
+          if local_now.hour < 6:
+              report_date = local_now.date() - datetime.timedelta(days=1)
+          else:
+              report_date = local_now.date()
+
+          key = report_date.strftime("%Y-%m-%d")
+
+          mood_map = {
+              "great": "😄 Отлично",
+              "good": "🙂 Хорошо",
+              "okay": "😐 Нормально",
+              "tough": "😟 Тяжело",
+          }
+
+          def stars(pct):
+              if pct >= 100:
+                  return "★★★"
+              if pct >= 66:
+                  return "★★☆"
+              if pct >= 33:
+                  return "★☆☆"
+              return "—"
+
+          blocks = []
+
+          for fn in files:
+              if not os.path.exists(fn):
+                  continue
+
+              with open(fn, "r", encoding="utf-8") as f:
+                  data = json.load(f)
+
+              child_name = data.get("settings", {}).get("child_name") or fn
+              subjects = data.get("subjects", [])
+              day_progress = data.get("progress", {}).get(key, {})
+              mood_key = data.get("moods", {}).get(key)
+              mood = mood_map.get(mood_key, "—")
+              note = data.get("notes", {}).get(key, "").strip()
+
+              total = 0
+              lines = []
+
+              for subject in subjects:
+                  subject_id = subject.get("id")
+                  value = day_progress.get(subject_id, 0)
+                  target = max(1, subject.get("target", 1))
+                  unit = subject.get("unit", "")
+                  subject_name = subject.get("name", "")
+                  icon = subject.get("icon", "•")
+
+                  completion = min(1, value / target)
+                  total += completion
+
+                  if value >= target:
+                      mark = "✅"
+                  elif value > 0:
+                      mark = "🟡"
+                  else:
+                      mark = "⬜"
+
+                  lines.append(
+                      f"{mark} {icon} {subject_name}: {value}/{target} {unit}"
+                  )
+
+              overall = round(total / len(subjects) * 100) if subjects else 0
+
+              block = (
+                  f"👤 {child_name}\n"
+                  f"😊 Настроение: {mood}\n"
+                  f"✅ Прогресс: {overall}%\n"
+                  f"⭐ Звёзды: {stars(overall)}\n"
+                  + "\n".join(lines)
+              )
+
+              if note:
+                  block += f"\n📝 Заметка: {note}"
+
+              blocks.append(block)
+
+          if blocks:
+              text = (
+                  "📊 Ежедневный семейный прогресс\n"
+                  f"📅 {key}\n\n"
+                  + "\n\n────────────\n\n".join(blocks)
+              )
+          else:
+              text = (
+                  "📊 Ежедневный семейный прогресс\n"
+                  f"📅 {key}\n\n"
+                  "Файлы с данными детей не найдены."
+              )
+
+          url = (
+              f"https://api.telegram.org/"
+              f"bot{os.environ['TELEGRAM_BOT_TOKEN']}/sendMessage"
+          )
+
+          payload = urllib.parse.urlencode({
+              "chat_id": os.environ["TELEGRAM_CHAT_ID"],
+              "text": text,
+          }).encode("utf-8")
+
+          with urllib.request.urlopen(url, payload) as response:
+              response.read()
+
+          print(
+              f"Report sent for {key}. "
+              f"Sent at {local_now.strftime('%Y-%m-%d %H:%M')} Uzbekistan time."
+          )
+          PY
