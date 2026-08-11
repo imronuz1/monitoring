@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="ru">
 <head>
@@ -1178,6 +1179,7 @@ function App({ config, onClearConfig, onUpdateConfig }) {
   const [loadError, setLoadError] = useState('');
   const [saveStatus, setSaveStatus] = useState('saved');
   const [saveError, setSaveError] = useState('');
+  const [reportStatus, setReportStatus] = useState('idle');
   const [data, setData] = useState({ subjects: [], progress: {}, notes: {}, moods: {}, checks: {}, settings: {} });
   const [activeDate, setActiveDate] = useState(todayKey());
   const [toast, setToast] = useState('');
@@ -1313,6 +1315,22 @@ function App({ config, onClearConfig, onUpdateConfig }) {
     update(prev => ({ ...prev, settings: { ...prev.settings, ...fields } }));
   };
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 1800); };
+  const requestReport = async () => {
+    setReportStatus('requesting');
+    try {
+      const requestStore = new GhStore({ ...config, path: 'telegram-send-request.json' });
+      await requestStore.save(
+        { requested_at: new Date().toISOString() },
+        'Request Telegram progress report'
+      );
+      setReportStatus('requested');
+      showToast('Report requested');
+    } catch (e) {
+      setReportStatus('idle');
+      setSaveError(String(e.message || e));
+      showToast('Could not request report');
+    }
+  };
   const flushSave = async () => {
     if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
     setSaveStatus('saving');
@@ -1399,6 +1417,9 @@ function App({ config, onClearConfig, onUpdateConfig }) {
           <span className={`pill ${status.tone}`}>{status.label} · {Math.round(totalCompletion * 100)}%</span>
           <div className="header-actions">
             <SaveIndicator status={saveStatus} error={saveError} />
+            <button className="btn primary" onClick={requestReport} disabled={reportStatus === 'requesting'}>
+              {reportStatus === 'requesting' ? 'Sending...' : 'Send report'}
+            </button>
             <button className="btn" onClick={() => setShowStats(true)}>Статистика</button>
             <button className="btn" onClick={() => setShowSettings(true)}>Настройки</button>
           </div>
