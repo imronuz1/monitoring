@@ -1,10 +1,25 @@
 name: Daily Telegram Family Progress Report
 
 on:
+  push:
+    paths:
+      - data.json
+      - kid2.json
+      - kid3.json
+      - telegram-send-request.json
   schedule:
     # Start 15 minutes early because GitHub Actions can delay jobs scheduled on the hour.
     - cron: "45 17 * * *" # 22:45 Uzbekistan time (UTC+5)
   workflow_dispatch:
+    inputs:
+      force_send:
+        description: Send a report now, even if not all children have updated progress
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
 
 jobs:
   send-report:
@@ -15,8 +30,9 @@ jobs:
 
       - name: Send Telegram family report
         env:
-          TELEGRAM_BOT_TOKEN: ${{ 8995727115:AAHml7qNACN1CXDFrZHQ7UhaxruSJc2_bd0}}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          FORCE_SEND: ${{ inputs.force_send || 'false' }}
         run: |
           python3 <<'PY'
           import json
@@ -27,6 +43,9 @@ jobs:
           import urllib.request
 
           files = ["data.json", "kid2.json", "kid3.json"]
+          group_state_file = "telegram-groups.json"
+          report_state_file = "telegram-report-state.json"
+          report_request_file = "telegram-send-request.json"
 
           # Uzbekistan time: UTC+5. Scheduled runs start a little early and
           # wait until 23:00 so ordinary GitHub Actions scheduling jitter does
@@ -65,6 +84,7 @@ jobs:
               return "—"
 
           blocks = []
+          child_data = []
 
           for fn in files:
               if not os.path.exists(fn):
@@ -72,6 +92,7 @@ jobs:
 
               with open(fn, "r", encoding="utf-8") as f:
                   data = json.load(f)
+              child_data.append(data)
 
               child_name = data.get("settings", {}).get("child_name") or fn
               subjects = data.get("subjects", [])
@@ -133,21 +154,111 @@ jobs:
                   "Файлы с данными детей не найдены."
               )
 
-          url = (
+          api_base = (
               f"https://api.telegram.org/"
-              f"bot{os.environ['TELEGRAM_BOT_TOKEN']}/sendMessage"
+              f"bot{os.environ['TELEGRAM_BOT_TOKEN']}"
           )
 
-          payload = urllib.parse.urlencode({
-              "chat_id": os.environ["TELEGRAM_CHAT_ID"],
-              "text": text,
-          }).encode("utf-8")
+          try:
+              with open(group_state_file, "r", encoding="utf-8") as f:
+                  group_state = json.load(f)
+          except (FileNotFoundError, json.JSONDecodeError):
+              group_state = {"last_update_id": 0, "chat_ids": []}
 
-          with urllib.request.urlopen(url, payload) as response:
-              response.read()
+          chat_ids = set(map(str, group_state.get("chat_ids", [])))
+          last_update_id = int(group_state.get("last_update_id", 0))
+          updates_url = api_base + "/getUpdates?" + urllib.parse.urlencode({
+              "offset": last_update_id + 1,
+              "allowed_updates": json.dumps(["message", "my_chat_member"]),
+          })
+
+          with urllib.request.urlopen(updates_url) as response:
+              updates = json.load(response).get("result", [])
+
+          for update in updates:
+              last_update_id = max(last_update_id, update.get("update_id", 0))
+              membership = update.get("my_chat_member")
+              message = update.get("message")
+              event = membership or message
+              chat = event.get("chat", {}) if event else {}
+
+              if chat.get("type") not in {"group", "supergroup"}:
+                  continue
+
+              chat_id = str(chat["id"])
+              if membership and membership.get("new_chat_member", {}).get("status") in {"left", "kicked"}:
+                  chat_ids.discard(chat_id)
+              else:
+                  chat_ids.add(chat_id)
+
+          with open(group_state_file, "w", encoding="utf-8") as f:
+              json.dump(
+                  {"last_update_id": last_update_id, "chat_ids": sorted(chat_ids)},
+                  f,
+                  indent=2,
+              )
+
+          try:
+              with open(report_state_file, "r", encoding="utf-8") as f:
+                  report_state = json.load(f)
+          except (FileNotFoundError, json.JSONDecodeError):
+              report_state = {}
+
+          manual_request = os.path.exists(report_request_file)
+          force_send = manual_request or os.environ.get("FORCE_SEND", "").lower() == "true"
+          is_scheduled = os.environ.get("EVENT_NAME") == "schedule"
+
+          def has_daily_progress(data):
+              return bool(
+                  data.get("progress", {}).get(key)
+                  or data.get("moods", {}).get(key)
+                  or data.get("notes", {}).get(key)
+                  or data.get("checks", {}).get(key)
+              )
+
+          all_children_updated = len(child_data) == len(files) and all(
+              has_daily_progress(data) for data in child_data
+          )
+
+          if not force_send and report_state.get("last_sent_date") == key:
+              print(f"A report for {key} was already sent.")
+              raise SystemExit(0)
+
+          if not force_send and not is_scheduled and not all_children_updated:
+              print("Waiting for all three children to record today's progress.")
+              raise SystemExit(0)
+
+          if not chat_ids:
+              print("No Telegram groups are registered yet.")
+              raise SystemExit(0)
+
+          for chat_id in chat_ids:
+              payload = urllib.parse.urlencode({
+                  "chat_id": chat_id,
+                  "text": text,
+              }).encode("utf-8")
+
+              with urllib.request.urlopen(api_base + "/sendMessage", payload) as response:
+                  response.read()
+
+          if not force_send:
+              with open(report_state_file, "w", encoding="utf-8") as f:
+                  json.dump({"last_sent_date": key}, f, indent=2)
+
+          if manual_request:
+              os.remove(report_request_file)
 
           print(
               f"Report sent for {key}. "
-              f"Sent at {local_now.strftime('%Y-%m-%d %H:%M')} Uzbekistan time."
+              f"Sent to {len(chat_ids)} group(s) at "
+              f"{local_now.strftime('%Y-%m-%d %H:%M')} Uzbekistan time."
           )
           PY
+
+      - name: Save Telegram report state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Track Telegram report groups"
+          git push
