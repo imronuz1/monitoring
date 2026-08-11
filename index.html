@@ -1416,9 +1416,6 @@ function App({ config, onClearConfig, onUpdateConfig }) {
           <span className={`pill ${status.tone}`}>{status.label} · {Math.round(totalCompletion * 100)}%</span>
           <div className="header-actions">
             <SaveIndicator status={saveStatus} error={saveError} />
-            <button className="btn primary" onClick={requestReport} disabled={reportStatus === 'requesting'}>
-              {reportStatus === 'requesting' ? 'Sending...' : 'Send report'}
-            </button>
             <button className="btn" onClick={() => setShowStats(true)}>Статистика</button>
             <button className="btn" onClick={() => setShowSettings(true)}>Настройки</button>
           </div>
@@ -1674,6 +1671,8 @@ function App({ config, onClearConfig, onUpdateConfig }) {
           saveStatus={saveStatus}
           saveError={saveError}
           onFlush={flushSave}
+          onRequestReport={requestReport}
+          reportStatus={reportStatus}
         />
       )}
     </div>
@@ -1936,7 +1935,7 @@ function StatsModal({ progress, subjects, onClose, onPickDate }) {
 }
 
 // ----------------------------------------------------------------------------
-function SettingsModal({ settings, config, onSave, onUpdateConfig, onClearConfig, onClose, dataSnapshot, saveStatus, saveError, onFlush }) {
+function SettingsModal({ settings, config, onSave, onUpdateConfig, onClearConfig, onClose, dataSnapshot, saveStatus, saveError, onFlush, onRequestReport, reportStatus }) {
   const [name, setName] = useState(settings.child_name || '');
   const [klass, setKlass] = useState(settings.class_name || '');
   const [reminder, setReminder] = useState(settings.reminder_time || '');
@@ -2069,6 +2068,15 @@ function SettingsModal({ settings, config, onSave, onUpdateConfig, onClearConfig
         </div>
 
         <div className="settings-section-head">Синхронизация и копии</div>
+
+        <div className="settings-row">
+          <div>
+            <div className="settings-label">Telegram</div>
+          </div>
+          <button className="btn primary" onClick={onRequestReport} disabled={reportStatus === 'requesting'} style={{ maxWidth: 200 }}>
+            {reportStatus === 'requesting' ? 'Sending...' : 'Send report'}
+          </button>
+        </div>
 
         <div className="settings-row">
           <div>
