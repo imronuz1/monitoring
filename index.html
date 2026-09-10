@@ -906,6 +906,37 @@ const daysInMonth = (yyyymm) => {
   const [y, m] = yyyymm.split('-').map(n => +n);
   return new Date(y, m, 0).getDate();
 };
+const dayOfWeek = (key) => {
+  const [y, m, d] = key.split('-').map(n => +n);
+  return new Date(y, m - 1, d, 12).getDay();
+};
+const isSunday = (key) => dayOfWeek(key) === 0;
+const isSaturday = (key) => dayOfWeek(key) === 6;
+
+function subjectCreatedDate(subject) {
+  if (subject.created_at) return subject.created_at;
+  const match = String(subject.id || '').match(/^s(\d{13})$/);
+  if (!match) return '';
+  const date = new Date(Number(match[1]));
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
+function isSaturdaySubject(subject) {
+  return subject.schedule === 'saturday' ||
+    String(subject.name || '').trim().toLowerCase() === 'saturday exercises';
+}
+
+function subjectWasActive(subject, key) {
+  const created = subjectCreatedDate(subject);
+  return (!created || key >= created) && (!subject.deleted_at || key < subject.deleted_at);
+}
+
+function subjectsForDate(subjects, key) {
+  return subjects.filter(subject =>
+    subjectWasActive(subject, key) && (!isSaturdaySubject(subject) || isSaturday(key))
+  );
+}
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -945,12 +976,17 @@ function dayCompletion(progressForDay, subjects) {
   }, 0) / subjects.length;
 }
 function computeStreak(progress, subjects) {
-  if (!subjects.length) return 0;
   let streak = 0;
   let cursor = todayKey();
   while (true) {
+    if (isSunday(cursor)) {
+      cursor = shiftDate(cursor, -1);
+      continue;
+    }
+    const activeSubjects = subjectsForDate(subjects, cursor);
+    if (!activeSubjects.length) break;
     const dp = progress[cursor] || {};
-    const allMet = subjects.every(s => (dp[s.id] || 0) >= s.target);
+    const allMet = activeSubjects.every(s => (dp[s.id] || 0) >= s.target);
     if (!allMet) break;
     streak++;
     cursor = shiftDate(cursor, -1);
@@ -958,15 +994,19 @@ function computeStreak(progress, subjects) {
   return streak;
 }
 function computeBestStreak(progress, subjects) {
-  if (!subjects.length) return 0;
   const keys = Object.keys(progress).sort();
   if (!keys.length) return 0;
   let best = 0, current = 0;
   let cursor = keys[0];
   const end = todayKey();
   while (cursor <= end) {
+    if (isSunday(cursor)) {
+      cursor = shiftDate(cursor, 1);
+      continue;
+    }
+    const activeSubjects = subjectsForDate(subjects, cursor);
     const dp = progress[cursor] || {};
-    const allMet = subjects.every(s => (dp[s.id] || 0) >= s.target);
+    const allMet = activeSubjects.length > 0 && activeSubjects.every(s => (dp[s.id] || 0) >= s.target);
     if (allMet) { current++; if (current > best) best = current; }
     else current = 0;
     cursor = shiftDate(cursor, 1);
@@ -1011,7 +1051,7 @@ function initialsFor(name) {
 // ----------------------------------------------------------------------------
 function defaultData() {
   return {
-    version: 2,
+    version: 3,
     subjects: [
       { id: 's1', name: 'Математика', icon: '∑',  unit: 'заданий',     target: 10 },
       { id: 's2', name: 'Английский', icon: 'A',  unit: 'упражнений',  target: 8  },
@@ -1019,6 +1059,7 @@ function defaultData() {
     ],
     progress: {},
     notes: {},
+    saturday_exercises: {},
     moods: {},
     checks: {},
     settings: { reminder_time: '', child_name: '', class_name: '' },
@@ -1101,10 +1142,11 @@ class GhStore {
     catch (e) { throw new Error('В файле некорректный JSON: ' + e.message); }
     const d = defaultData();
     return {
-      version: parsed.version || 1,
+      version: Math.max(parsed.version || 1, 3),
       subjects: parsed.subjects || d.subjects,
       progress: parsed.progress || {},
       notes: parsed.notes || {},
+      saturday_exercises: parsed.saturday_exercises || {},
       moods: parsed.moods || {},
       checks: parsed.checks || {},
       settings: { ...d.settings, ...(parsed.settings || {}) },
@@ -1179,12 +1221,13 @@ function App({ config, onClearConfig, onUpdateConfig }) {
   const [saveStatus, setSaveStatus] = useState('saved');
   const [saveError, setSaveError] = useState('');
   const [reportStatus, setReportStatus] = useState('idle');
-  const [data, setData] = useState({ subjects: [], progress: {}, notes: {}, moods: {}, checks: {}, settings: {} });
+  const [data, setData] = useState({ subjects: [], progress: {}, notes: {}, saturday_exercises: {}, moods: {}, checks: {}, settings: {} });
   const [activeDate, setActiveDate] = useState(todayKey());
   const [toast, setToast] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [showStats, setShowStats] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSaturdayTasks, setShowSaturdayTasks] = useState(false);
   const saveTimer = useRef(null);
 
   useEffect(() => { storeRef.current = new GhStore(config); }, [config]);
@@ -1281,13 +1324,16 @@ function App({ config, onClearConfig, onUpdateConfig }) {
     });
   };
   const addSubject = (s) => {
-    const newSubj = { id: 's' + Date.now(), ...s };
+    const newSubj = { id: 's' + Date.now(), created_at: todayKey(), ...s };
     update(prev => ({ ...prev, subjects: [...prev.subjects, newSubj] }));
     showToast(`Добавлено: ${s.name}`);
   };
   const removeSubject = (id) => {
-    update(prev => ({ ...prev, subjects: prev.subjects.filter(s => s.id !== id) }));
-    showToast('Предмет удалён');
+    update(prev => ({
+      ...prev,
+      subjects: prev.subjects.map(s => s.id === id ? { ...s, deleted_at: todayKey() } : s),
+    }));
+    showToast('Задача удалена с сегодняшнего дня');
   };
   const updateSubject = (id, fields) => {
     update(prev => ({ ...prev, subjects: prev.subjects.map(s => s.id === id ? { ...s, ...fields } : s) }));
@@ -1341,10 +1387,13 @@ function App({ config, onClearConfig, onUpdateConfig }) {
     }
   };
 
-  const subjects = data.subjects;
+  const allSubjects = data.subjects;
+  const subjects = useMemo(() => subjectsForDate(allSubjects, activeDate), [allSubjects, activeDate]);
+  const regularSubjects = subjects.filter(s => !isSaturdaySubject(s));
+  const saturdaySubjects = allSubjects.filter(s => isSaturdaySubject(s) && subjectWasActive(s, activeDate));
   const totalCompletion = useMemo(() => dayCompletion(todayProgress, subjects), [todayProgress, subjects]);
   const completedCount = subjects.filter(s => (todayProgress[s.id] || 0) >= s.target).length;
-  const streak = useMemo(() => computeStreak(data.progress, subjects), [data.progress, subjects]);
+  const streak = useMemo(() => computeStreak(data.progress, allSubjects), [data.progress, allSubjects]);
   const stars = starsFromCompletion(totalCompletion);
   const status = statusForCompletion(totalCompletion);
   const badge = badgeForStreak(streak);
@@ -1356,10 +1405,11 @@ function App({ config, onClearConfig, onUpdateConfig }) {
     for (let i = 6; i >= 0; i--) {
       const k = shiftDate(todayKey(), -i);
       const dp = data.progress[k] || {};
-      out.push({ key: k, pct: dayCompletion(dp, subjects), ...dayLabel(k) });
+      const daySubjects = subjectsForDate(allSubjects, k);
+      out.push({ key: k, pct: isSunday(k) ? 0 : dayCompletion(dp, daySubjects), ...dayLabel(k) });
     }
     return out;
-  }, [data.progress, subjects]);
+  }, [data.progress, allSubjects]);
 
   const history = useMemo(() => {
     const out = [];
@@ -1367,11 +1417,12 @@ function App({ config, onClearConfig, onUpdateConfig }) {
       const k = shiftDate(todayKey(), -i);
       const dp = data.progress[k];
       if (!dp) continue;
-      const pct = dayCompletion(dp, subjects);
+      if (isSunday(k)) continue;
+      const pct = dayCompletion(dp, subjectsForDate(allSubjects, k));
       if (pct > 0) out.push({ key: k, pct });
     }
     return out;
-  }, [data.progress, subjects]);
+  }, [data.progress, allSubjects]);
 
   useReminder(data.settings.reminder_time);
 
@@ -1498,13 +1549,13 @@ function App({ config, onClearConfig, onUpdateConfig }) {
             </div>
 
             <div className="subjects">
-              {subjects.length === 0 ? (
+              {regularSubjects.length === 0 ? (
                 <div className="card empty">
                   <div className="empty-icon">📚</div>
                   Пока нет предметов. Добавь один ниже, чтобы начать.
                 </div>
               ) : (
-                subjects.map(s => (
+                regularSubjects.map(s => (
                   <SubjectRow
                     key={s.id}
                     subject={s}
@@ -1562,6 +1613,50 @@ function App({ config, onClearConfig, onUpdateConfig }) {
               onChange={(e) => setNoteForActive(e.target.value)}
             />
             <div className="meta">Символов: {todayNote.length} · сохраняется автоматически</div>
+          </div>
+
+          <div className="section">
+            <button
+              className="btn primary"
+              onClick={() => setShowSaturdayTasks(value => !value)}
+            >
+              {showSaturdayTasks ? 'Скрыть субботние таски' : 'Субботние таски'}
+            </button>
+
+            {(showSaturdayTasks || isSaturday(activeDate)) && (
+              <div style={{ marginTop: 16 }}>
+                <div className="section-head">
+                  <h2>Субботние таски</h2>
+                  <span className="meta">Учитываются только по субботам</span>
+                </div>
+                <div className="subjects">
+                  {saturdaySubjects.length === 0 ? (
+                    <div className="card empty">Пока нет субботних задач.</div>
+                  ) : saturdaySubjects.map(s => (
+                    <SubjectRow
+                      key={s.id}
+                      subject={s}
+                      value={todayProgress[s.id] || 0}
+                      editing={editingId === s.id}
+                      onStartEdit={() => setEditingId(s.id)}
+                      onCancelEdit={() => setEditingId(null)}
+                      onChange={(v) => setSubjectProgress(s.id, v)}
+                      onStep={(d) => stepProgress(s.id, d)}
+                      onComplete={() => markComplete(s.id)}
+                      onRemove={() => {
+                        if (confirm(`Удалить «${s.name}»? История прошлых дней сохранится.`)) removeSubject(s.id);
+                      }}
+                      onSaveEdit={(fields) => { updateSubject(s.id, fields); setEditingId(null); }}
+                      onReorder={reorderSubject}
+                    />
+                  ))}
+                </div>
+                <AddForm
+                  title="Добавить субботнюю задачу"
+                  onAdd={(subject) => addSubject({ ...subject, schedule: 'saturday' })}
+                />
+              </div>
+            )}
           </div>
         </main>
 
@@ -1654,7 +1749,7 @@ function App({ config, onClearConfig, onUpdateConfig }) {
       {showStats && (
         <StatsModal
           progress={data.progress}
-          subjects={subjects}
+          subjects={allSubjects}
           onClose={() => setShowStats(false)}
           onPickDate={(k) => { setActiveDate(k); setShowStats(false); }}
         />
@@ -1783,7 +1878,7 @@ function SubjectRow({ subject, value, editing, onStartEdit, onCancelEdit, onSave
 }
 
 // ----------------------------------------------------------------------------
-function AddForm({ onAdd }) {
+function AddForm({ onAdd, title = 'Добавить новый предмет' }) {
   const [icon, setIcon] = useState('✦');
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
@@ -1802,7 +1897,7 @@ function AddForm({ onAdd }) {
 
   return (
     <div className="add-form">
-      <div className="add-form-title">Добавить новый предмет</div>
+      <div className="add-form-title">{title}</div>
       <div className="add-form-row">
         <input type="text" placeholder="Иконка" value={icon} onChange={e => setIcon(e.target.value)} maxLength="2" style={{ textAlign: 'center' }} />
         <input type="text" placeholder="Название (напр. Игра на пианино)" value={name} onChange={e => setName(e.target.value)} />
@@ -1831,13 +1926,13 @@ function StatsModal({ progress, subjects, onClose, onPickDate }) {
   for (let d = 1; d <= daysCount; d++) {
     const key = `${month}-${String(d).padStart(2,'0')}`;
     const dp = progress[key];
-    const pct = dp ? dayCompletion(dp, subjects) : 0;
+    const pct = dp ? dayCompletion(dp, subjectsForDate(subjects, key)) : 0;
     cells.push({ key, pct, num: d, hasData: !!dp });
   }
 
   let totalPctSum = 0, daysWithData = 0, perfectDays = 0;
   cells.forEach(c => {
-    if (c.empty || !c.hasData) return;
+    if (c.empty || !c.hasData || isSunday(c.key)) return;
     daysWithData++;
     totalPctSum += c.pct;
     if (c.pct >= 1) perfectDays++;
@@ -1847,12 +1942,13 @@ function StatsModal({ progress, subjects, onClose, onPickDate }) {
   const subjectMonthly = subjects.map(s => {
     let total = 0, target = 0;
     cells.forEach(c => {
-      if (c.empty || !c.hasData) return;
+      if (c.empty || !c.hasData || isSunday(c.key)) return;
+      if (!subjectsForDate([s], c.key).length) return;
       total += (progress[c.key] || {})[s.id] || 0;
       target += s.target;
     });
     return { ...s, total, target, pct: target ? Math.min(1, total/target) : 0 };
-  });
+  }).filter(s => s.target > 0);
 
   const bestStreak = useMemo(() => computeBestStreak(progress, subjects), [progress, subjects]);
 
