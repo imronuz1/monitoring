@@ -1092,6 +1092,12 @@ const CHILD_KEY = (() => {
   } catch { return ''; }
 })();
 
+const DEFAULT_CHILD_NAMES = {
+  '': 'Fuzayl',
+  kid2: 'Imron',
+  kid3: 'Комрон',
+};
+
 // ----------------------------------------------------------------------------
 // GitHub Contents-API store
 // ----------------------------------------------------------------------------
@@ -1443,7 +1449,7 @@ function App({ config, onClearConfig, onUpdateConfig }) {
   }
   if (!loaded) return <div className="loading">Загружаем твою панель…</div>;
 
-  const childName = (data.settings.child_name || '').trim() || 'Друг';
+  const childName = (data.settings.child_name || '').trim() || DEFAULT_CHILD_NAMES[CHILD_KEY] || 'Друг';
   const className = (data.settings.class_name || '').trim();
 
   return (
