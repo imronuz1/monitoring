@@ -1098,54 +1098,37 @@ const DEFAULT_CHILD_NAMES = {
   kid3: 'Комрон',
 };
 
+const PROFILE_CONFIGS = {
+  '': { owner: 'ahroruz', repo: 'child-progress-data', path: 'data.json', child: 'fuzayl' },
+  kid2: { owner: 'ahroruz', repo: 'child-progress-data', path: 'kid2.json', child: 'kid2' },
+  kid3: { owner: 'ahroruz', repo: 'child-progress-data', path: 'kid3.json', child: 'kid3' },
+};
+const WORKER_API = 'https://child-progress-report.crazy-dinow.workers.dev';
+
 // ----------------------------------------------------------------------------
 // GitHub Contents-API store
 // ----------------------------------------------------------------------------
-const CONFIG_KEY = CHILD_KEY ? `sp.gh.config:${CHILD_KEY}` : 'sp.gh.config';
-function loadConfig() {
-  try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null'); }
-  catch { return null; }
-}
-function saveConfig(cfg) { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); }
-function clearConfig() { localStorage.removeItem(CONFIG_KEY); }
+function loadConfig() { return PROFILE_CONFIGS[CHILD_KEY] || PROFILE_CONFIGS['']; }
+function saveConfig() {}
+function clearConfig() {}
 
 class GhStore {
   constructor(cfg) { this.cfg = cfg; this.sha = null; }
   get url() {
-    const { owner, repo, path, branch } = this.cfg;
-    const params = branch ? `?ref=${encodeURIComponent(branch)}` : '';
-    return `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodeURI(path)}${params}`;
+    return `${WORKER_API}/data?child=${encodeURIComponent(this.cfg.child)}`;
   }
   get headers() {
-    return {
-      Authorization: `Bearer ${this.cfg.token}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    };
+    return { 'Content-Type': 'application/json' };
   }
   async testConnection() {
     const res = await fetch(this.url, { headers: this.headers });
-    if (res.status === 200 || res.status === 404) return { ok: true, exists: res.status === 200 };
-    if (res.status === 401) throw new Error('Токен не принят (401). Создай токен заново или проверь, что он скопирован верно.');
-    if (res.status === 403) {
-      const text = await res.text();
-      throw new Error('Нет доступа (403). У токена должны быть права Contents: Read and write для этого репозитория. ' + text.slice(0, 200));
-    }
+    if (res.ok) return { ok: true, exists: true };
     throw new Error(`Неожиданный ответ ${res.status}: ${(await res.text()).slice(0, 200)}`);
   }
   async load() {
     const res = await fetch(this.url, { headers: this.headers });
-    if (res.status === 404) { this.sha = null; return defaultData(); }
-    if (!res.ok) throw new Error(`Ошибка загрузки из GitHub (${res.status}): ${(await res.text()).slice(0, 300)}`);
-    const j = await res.json();
-    this.sha = j.sha;
-    let text;
-    if (j.encoding === 'base64' && j.content) text = base64ToUtf8(j.content);
-    else if (j.download_url) text = await (await fetch(j.download_url)).text();
-    else throw new Error('Неподдерживаемая кодировка файла из GitHub.');
-    let parsed;
-    try { parsed = JSON.parse(text); }
-    catch (e) { throw new Error('В файле некорректный JSON: ' + e.message); }
+    if (!res.ok) throw new Error(`Ошибка загрузки (${res.status}): ${(await res.text()).slice(0, 300)}`);
+    const parsed = await res.json();
     const d = defaultData();
     return {
       version: Math.max(parsed.version || 1, 3),
@@ -1159,48 +1142,13 @@ class GhStore {
     };
   }
   async refreshSha() {
-    const res = await fetch(this.url, { headers: this.headers });
-    if (res.status === 404) {
-      this.sha = null;
-      return null;
-    }
-    if (!res.ok) {
-      throw new Error(`Ошибка проверки файла в GitHub (${res.status}): ${(await res.text()).slice(0, 300)}`);
-    }
-    const j = await res.json();
-    this.sha = j.sha || null;
-    return this.sha;
+    return null;
   }
   async save(data, message) {
-    // GitHub requires the current SHA when updating an existing file.
-    // Refresh it before each write so token/config changes and stale tabs do not
-    // cause 422 "sha wasn't supplied" errors.
-    await this.refreshSha();
-
-    const body = {
-      message: message || `Обновление прогресса · ${new Date().toISOString().slice(0, 19).replace('T', ' ')}`,
-      content: utf8ToBase64(JSON.stringify(data, null, 2)),
-    };
-    if (this.sha) body.sha = this.sha;
-    if (this.cfg.branch) body.branch = this.cfg.branch;
-
-    const headers = { ...this.headers, 'Content-Type': 'application/json' };
-    let res = await fetch(this.url, { method: 'PUT', headers, body: JSON.stringify(body) });
-
-    // If another tab/device changed the file between our SHA check and PUT,
-    // refresh the SHA and retry once.
-    if (res.status === 409 || res.status === 422) {
-      await this.refreshSha();
-      if (this.sha) body.sha = this.sha;
-      else delete body.sha;
-      res = await fetch(this.url, { method: 'PUT', headers, body: JSON.stringify(body) });
-    }
-
+    const res = await fetch(this.url, { method: 'PUT', headers: this.headers, body: JSON.stringify(data) });
     if (!res.ok) {
-      throw new Error(`Ошибка сохранения в GitHub (${res.status}): ${(await res.text()).slice(0, 300)}`);
+      throw new Error(`Ошибка сохранения (${res.status}): ${(await res.text()).slice(0, 300)}`);
     }
-    const j = await res.json();
-    this.sha = j.content?.sha || this.sha;
   }
 }
 
@@ -1208,12 +1156,11 @@ class GhStore {
 // Root
 // ----------------------------------------------------------------------------
 function Root() {
-  const [config, setConfig] = useState(loadConfig());
-  if (!config) return <SetupWizard onSaved={(c) => setConfig(c)} />;
+  const config = loadConfig();
   return <App
     config={config}
-    onClearConfig={() => { clearConfig(); setConfig(null); }}
-    onUpdateConfig={(c) => { saveConfig(c); setConfig(c); }}
+    onClearConfig={() => {}}
+    onUpdateConfig={() => {}}
   />;
 }
 
@@ -1449,7 +1396,7 @@ function App({ config, onClearConfig, onUpdateConfig }) {
   }
   if (!loaded) return <div className="loading">Загружаем твою панель…</div>;
 
-  const childName = (data.settings.child_name || '').trim() || DEFAULT_CHILD_NAMES[CHILD_KEY] || 'Друг';
+  const childName = DEFAULT_CHILD_NAMES[CHILD_KEY] || 'Fuzayl';
   const className = (data.settings.class_name || '').trim();
 
   return (
