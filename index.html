@@ -117,6 +117,8 @@
   .btn.danger { color: var(--peach-deep); border-color: var(--peach-soft); }
   .btn.danger:hover { background: var(--peach-soft); border-color: var(--peach-deep); }
   .btn.icon { width: 40px; height: 40px; padding: 0; border-radius: var(--radius-sm); }
+  .profile-nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .profile-nav a { text-decoration: none; }
 
   .header {
     display: grid;
@@ -856,6 +858,9 @@
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"></script>
 
 <script type="text/babel">
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
@@ -1052,11 +1057,7 @@ function initialsFor(name) {
 function defaultData() {
   return {
     version: 3,
-    subjects: [
-      { id: 's1', name: 'Математика', icon: '∑',  unit: 'заданий',     target: 10 },
-      { id: 's2', name: 'Английский', icon: 'A',  unit: 'упражнений',  target: 8  },
-      { id: 's3', name: 'Чтение',     icon: '📖', unit: 'страниц',     target: 30 },
-    ],
+    subjects: [],
     progress: {},
     notes: {},
     saturday_exercises: {},
@@ -1064,22 +1065,6 @@ function defaultData() {
     checks: {},
     settings: { reminder_time: '', child_name: '', class_name: '' },
   };
-}
-
-// ----------------------------------------------------------------------------
-// UTF-8 ↔ Base64
-// ----------------------------------------------------------------------------
-function utf8ToBase64(str) {
-  const bytes = new TextEncoder().encode(str);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-function base64ToUtf8(b64) {
-  const binary = atob(b64.replace(/\s/g, ''));
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return new TextDecoder().decode(bytes);
 }
 
 // ----------------------------------------------------------------------------
@@ -1099,36 +1084,30 @@ const DEFAULT_CHILD_NAMES = {
 };
 
 const PROFILE_CONFIGS = {
-  '': { owner: 'ahroruz', repo: 'child-progress-data', path: 'data.json', child: 'fuzayl' },
-  kid2: { owner: 'ahroruz', repo: 'child-progress-data', path: 'kid2.json', child: 'kid2' },
-  kid3: { owner: 'ahroruz', repo: 'child-progress-data', path: 'kid3.json', child: 'kid3' },
+  '': { child: 'fuzayl' },
+  kid2: { child: 'imron' },
+  kid3: { child: 'komron' },
 };
-const WORKER_API = 'https://child-progress-report.crazy-dinow.workers.dev';
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyA7I5qjQISZpbMVsufqvpIeSzb3BTAoQBU',
+  authDomain: 'monitoring-22404.firebaseapp.com',
+  databaseURL: 'https://monitoring-22404-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'monitoring-22404',
+  appId: '1:129138030307:web:93e792266d43732b6277d6',
+};
+firebase.initializeApp(FIREBASE_CONFIG);
+const firebaseAuth = firebase.auth();
+const firebaseDb = firebase.database();
 
 // ----------------------------------------------------------------------------
-// GitHub Contents-API store
+// Firebase Realtime Database store
 // ----------------------------------------------------------------------------
-function loadConfig() { return PROFILE_CONFIGS[CHILD_KEY] || PROFILE_CONFIGS['']; }
-function saveConfig() {}
-function clearConfig() {}
-
-class GhStore {
-  constructor(cfg) { this.cfg = cfg; this.sha = null; }
-  get url() {
-    return `${WORKER_API}/data?child=${encodeURIComponent(this.cfg.child)}`;
-  }
-  get headers() {
-    return { 'Content-Type': 'application/json' };
-  }
-  async testConnection() {
-    const res = await fetch(this.url, { headers: this.headers });
-    if (res.ok) return { ok: true, exists: true };
-    throw new Error(`Неожиданный ответ ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  }
+class FirebaseStore {
+  constructor(profile) { this.ref = firebaseDb.ref(`profiles/${profile}`); }
   async load() {
-    const res = await fetch(this.url, { headers: this.headers });
-    if (!res.ok) throw new Error(`Ошибка загрузки (${res.status}): ${(await res.text()).slice(0, 300)}`);
-    const parsed = await res.json();
+    const snapshot = await this.ref.get();
+    if (!snapshot.exists()) throw new Error('Профиль не найден в Firebase.');
+    const parsed = snapshot.val();
     const d = defaultData();
     return {
       version: Math.max(parsed.version || 1, 3),
@@ -1141,39 +1120,47 @@ class GhStore {
       settings: { ...d.settings, ...(parsed.settings || {}) },
     };
   }
-  async refreshSha() {
-    return null;
-  }
-  async save(data, message) {
-    const res = await fetch(this.url, { method: 'PUT', headers: this.headers, body: JSON.stringify(data) });
-    if (!res.ok) {
-      throw new Error(`Ошибка сохранения (${res.status}): ${(await res.text()).slice(0, 300)}`);
-    }
-  }
+  async save(data) { await this.ref.set(data); }
 }
 
 // ----------------------------------------------------------------------------
 // Root
 // ----------------------------------------------------------------------------
 function Root() {
-  const config = loadConfig();
-  return <App
-    config={config}
-    onClearConfig={() => {}}
-    onUpdateConfig={() => {}}
-  />;
+  const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [authError, setAuthError] = useState('');
+  useEffect(() => firebaseAuth.onAuthStateChanged(
+    nextUser => { setUser(nextUser); setAuthReady(true); setAuthError(''); },
+    error => { setAuthError(String(error.message || error)); setAuthReady(true); }
+  ), []);
+  const signIn = async () => {
+    setAuthError('');
+    try { await firebaseAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+    catch (error) { setAuthError(String(error.message || error)); }
+  };
+  if (!authReady) return <div className="loading">Подключаемся к Firebase…</div>;
+  if (!user) return (
+    <div className="setup-screen"><div className="setup-card">
+      <h1>Ежедневный прогресс</h1>
+      <div className="lead">Войдите, чтобы открыть семейные задачи.</div>
+      {authError && <div className="setup-error">{authError}</div>}
+      <div className="setup-actions"><button className="btn primary" onClick={signIn}>Войти через Google</button></div>
+    </div></div>
+  );
+  const config = PROFILE_CONFIGS[CHILD_KEY] || PROFILE_CONFIGS[''];
+  return <App key={config.child} config={config} user={user} onSignOut={() => firebaseAuth.signOut()} />;
 }
 
 // ----------------------------------------------------------------------------
 // App
 // ----------------------------------------------------------------------------
-function App({ config, onClearConfig, onUpdateConfig }) {
-  const storeRef = useRef(new GhStore(config));
+function App({ config, user, onSignOut }) {
+  const storeRef = useRef(new FirebaseStore(config.child));
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [saveStatus, setSaveStatus] = useState('saved');
   const [saveError, setSaveError] = useState('');
-  const [reportStatus, setReportStatus] = useState('idle');
   const [data, setData] = useState({ subjects: [], progress: {}, notes: {}, saturday_exercises: {}, moods: {}, checks: {}, settings: {} });
   const [activeDate, setActiveDate] = useState(todayKey());
   const [toast, setToast] = useState('');
@@ -1183,7 +1170,7 @@ function App({ config, onClearConfig, onUpdateConfig }) {
   const [showSaturdayTasks, setShowSaturdayTasks] = useState(false);
   const saveTimer = useRef(null);
 
-  useEffect(() => { storeRef.current = new GhStore(config); }, [config]);
+  useEffect(() => { storeRef.current = new FirebaseStore(config.child); }, [config.child]);
 
   useEffect(() => {
     (async () => {
@@ -1313,31 +1300,29 @@ function App({ config, onClearConfig, onUpdateConfig }) {
     update(prev => ({ ...prev, settings: { ...prev.settings, ...fields } }));
   };
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 1800); };
-  const requestReport = async () => {
-    setReportStatus('requesting');
-    try {
-      const requestStore = new GhStore({ ...config, path: 'telegram-send-request.json' });
-      await requestStore.save(
-        { requested_at: new Date().toISOString() },
-        'Request Telegram progress report'
-      );
-      setReportStatus('requested');
-      showToast('Report requested');
-    } catch (e) {
-      setReportStatus('idle');
-      setSaveError(String(e.message || e));
-      showToast('Could not request report');
-    }
-  };
   const flushSave = async () => {
     if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
     setSaveStatus('saving');
     try {
-      await storeRef.current.save(data, 'Ручное сохранение');
+      await storeRef.current.save(data);
       setSaveStatus('saved'); setSaveError(''); showToast('Сохранено');
     } catch (e) {
       setSaveStatus('error'); setSaveError(String(e.message || e));
     }
+  };
+  const signOutSafely = async () => {
+    if (saveStatus === 'saving') {
+      if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+      try {
+        await storeRef.current.save(data);
+        setSaveStatus('saved');
+      } catch (e) {
+        setSaveStatus('error');
+        setSaveError(String(e.message || e));
+        return;
+      }
+    }
+    await onSignOut();
   };
 
   const allSubjects = data.subjects;
@@ -1388,7 +1373,7 @@ function App({ config, onClearConfig, onUpdateConfig }) {
           <div style={{ marginTop: 14 }}>
             <button className="btn" onClick={() => window.location.reload()}>Повторить</button>
             {' '}
-            <button className="btn danger" onClick={onClearConfig}>Сбросить настройки GitHub</button>
+            <button className="btn" onClick={onSignOut}>Другой аккаунт</button>
           </div>
         </div>
       </div>
@@ -1401,6 +1386,11 @@ function App({ config, onClearConfig, onUpdateConfig }) {
 
   return (
     <div className="container">
+      <nav className="profile-nav" aria-label="Профили">
+        {[['', 'Fuzayl'], ['kid2', 'Imron'], ['kid3', 'Комрон']].map(([key, label]) => (
+          <a key={label} className={`btn ${CHILD_KEY === key ? 'primary' : ''}`} href={key ? `?child=${key}` : window.location.pathname}>{label}</a>
+        ))}
+      </nav>
       <header className="header">
         <div className="header-left">
           <div className="avatar">{initialsFor(childName)}</div>
@@ -1693,7 +1683,7 @@ function App({ config, onClearConfig, onUpdateConfig }) {
       </div>
 
       <footer className="footer">
-        <span>Сохранено в {config.owner}/{config.repo}</span>
+        <span>Сохранено в Firebase</span>
         <span>Сделано с заботой</span>
       </footer>
 
@@ -1711,16 +1701,14 @@ function App({ config, onClearConfig, onUpdateConfig }) {
         <SettingsModal
           settings={data.settings}
           config={config}
+          user={user}
           onSave={updateSettings}
-          onUpdateConfig={onUpdateConfig}
-          onClearConfig={onClearConfig}
+          onSignOut={signOutSafely}
           onClose={() => setShowSettings(false)}
           dataSnapshot={data}
           saveStatus={saveStatus}
           saveError={saveError}
           onFlush={flushSave}
-          onRequestReport={requestReport}
-          reportStatus={reportStatus}
         />
       )}
     </div>
@@ -1984,19 +1972,11 @@ function StatsModal({ progress, subjects, onClose, onPickDate }) {
 }
 
 // ----------------------------------------------------------------------------
-function SettingsModal({ settings, config, onSave, onUpdateConfig, onClearConfig, onClose, dataSnapshot, saveStatus, saveError, onFlush, onRequestReport, reportStatus }) {
+function SettingsModal({ settings, config, user, onSave, onSignOut, onClose, dataSnapshot, saveStatus, saveError, onFlush }) {
   const [name, setName] = useState(settings.child_name || '');
   const [klass, setKlass] = useState(settings.class_name || '');
   const [reminder, setReminder] = useState(settings.reminder_time || '');
   const [notifPerm, setNotifPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'unsupported');
-
-  const [owner, setOwner] = useState(config.owner);
-  const [repo, setRepo]   = useState(config.repo);
-  const [path, setPath]   = useState(config.path);
-  const [token, setToken] = useState(config.token);
-  const [revealToken, setRevealToken] = useState(false);
-  const [ghError, setGhError] = useState('');
-  const [ghOk, setGhOk] = useState('');
 
   const requestNotif = async () => {
     if (typeof Notification === 'undefined') return;
@@ -2018,23 +1998,6 @@ function SettingsModal({ settings, config, onSave, onUpdateConfig, onClearConfig
     a.download = `progress-backup-${todayKey()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const testAndSaveGh = async () => {
-    setGhError(''); setGhOk('');
-    const cfg = { owner: owner.trim(), repo: repo.trim(), path: path.trim() || 'data.json', token: token.trim() };
-    try {
-      const probe = new GhStore(cfg);
-      await probe.testConnection();
-      onUpdateConfig(cfg);
-      setGhOk('Сохранено. Будет использоваться при следующем сохранении.');
-    } catch (e) { setGhError(String(e.message || e)); }
-  };
-
-  const reset = () => {
-    if (confirm('Забыть настройки GitHub в ЭТОМ браузере? Данные на GitHub останутся. Можно ввести токен снова в любой момент.')) {
-      onClearConfig();
-    }
   };
 
   return (
@@ -2077,55 +2040,16 @@ function SettingsModal({ settings, config, onSave, onUpdateConfig, onClearConfig
           <input type="time" value={reminder} onChange={e => setReminder(e.target.value)} />
         </div>
 
-        <div className="settings-section-head">Хранилище (GitHub)</div>
-
+        <div className="settings-section-head">Хранилище (Firebase)</div>
         <div className="settings-row">
           <div>
-            <div className="settings-label">Репозиторий</div>
-            <div className="settings-help">Владелец / репозиторий. Здесь хранится файл с данными.</div>
+            <div className="settings-label">Профиль</div>
+            <div className="settings-help">Данные сохраняются в защищённой базе Firebase.</div>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', maxWidth: 320 }}>
-            <input type="text" value={owner} onChange={e => setOwner(e.target.value)} placeholder="владелец" style={{ flex: 1 }} />
-            <span style={{ color: 'var(--muted)' }}>/</span>
-            <input type="text" value={repo} onChange={e => setRepo(e.target.value)} placeholder="репозиторий" style={{ flex: 1 }} />
-          </div>
-        </div>
-
-        <div className="settings-row">
-          <div>
-            <div className="settings-label">Путь к файлу</div>
-            <div className="settings-help">Путь к файлу в репозитории, обычно <code style={{ fontFamily: "ui-monospace, monospace", fontSize: 12 }}>data.json</code>.</div>
-          </div>
-          <input type="text" value={path} onChange={e => setPath(e.target.value)} placeholder="data.json" />
-        </div>
-
-        <div className="settings-row">
-          <div>
-            <div className="settings-label">Персональный токен</div>
-            <div className="settings-help">
-              Хранится только в этом браузере. <a href="#" onClick={e => { e.preventDefault(); setRevealToken(v => !v); }}>{revealToken ? 'Скрыть' : 'Показать'}</a>
-            </div>
-          </div>
-          <input type={revealToken ? 'text' : 'password'} value={token} onChange={e => setToken(e.target.value)} placeholder="github_pat_…" />
-        </div>
-
-        {ghError && <div className="setup-error" style={{ marginTop: 8 }}>{ghError}</div>}
-        {ghOk && <div className="setup-error" style={{ marginTop: 8, color: 'var(--mint-deep)', borderColor: 'var(--mint)', background: 'var(--mint-soft)' }}>{ghOk}</div>}
-
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
-          <button className="btn" onClick={testAndSaveGh}>Проверить и сохранить</button>
+          <span>{config.child} · {user.email}</span>
         </div>
 
         <div className="settings-section-head">Синхронизация и копии</div>
-
-        <div className="settings-row">
-          <div>
-            <div className="settings-label">Telegram</div>
-          </div>
-          <button className="btn primary" onClick={onRequestReport} disabled={reportStatus === 'requesting'} style={{ maxWidth: 200 }}>
-            {reportStatus === 'requesting' ? 'Sending...' : 'Send report'}
-          </button>
-        </div>
 
         <div className="settings-row">
           <div>
@@ -2145,117 +2069,20 @@ function SettingsModal({ settings, config, onSave, onUpdateConfig, onClearConfig
             <div className="settings-label">Резервная копия</div>
             <div className="settings-help">Скачать копию данных в формате JSON.</div>
           </div>
-          <button className="btn" onClick={exportJson} style={{ maxWidth: 200 }}>Экспортировать data.json</button>
+          <button className="btn" onClick={exportJson} style={{ maxWidth: 200 }}>Скачать JSON</button>
         </div>
 
         <div className="settings-row">
           <div>
-            <div className="settings-label">Сбросить устройство</div>
-            <div className="settings-help">Забыть GitHub-токен в ЭТОМ браузере. Данные в GitHub не изменятся.</div>
+            <div className="settings-label">Аккаунт</div>
+            <div className="settings-help">Выйти из семейного приложения на этом устройстве.</div>
           </div>
-          <button className="btn danger" onClick={reset} style={{ maxWidth: 200 }}>Сбросить настройки GitHub</button>
+          <button className="btn danger" onClick={onSignOut} style={{ maxWidth: 200 }}>Выйти</button>
         </div>
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 22 }}>
           <button className="btn" onClick={onClose}>Закрыть</button>
           <button className="btn primary" onClick={saveAll}>Сохранить настройки</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ----------------------------------------------------------------------------
-function SetupWizard({ onSaved }) {
-  const [owner, setOwner] = useState('');
-  const [repo, setRepo]   = useState('child-progress-data');
-  const [path, setPath]   = useState(CHILD_KEY ? `${CHILD_KEY}.json` : 'data.json');
-  const [token, setToken] = useState('');
-  const [importFile, setImportFile] = useState(null);
-  const [busy, setBusy]   = useState(false);
-  const [error, setError] = useState('');
-
-  const submit = async () => {
-    setError(''); setBusy(true);
-    try {
-      const cfg = { owner: owner.trim(), repo: repo.trim(), path: (path.trim() || 'data.json'), token: token.trim() };
-      if (!cfg.owner || !cfg.repo || !cfg.token) throw new Error('Заполни поля: владелец, репозиторий и токен.');
-      const store = new GhStore(cfg);
-      const probe = await store.testConnection();
-
-      if (importFile) {
-        let parsed;
-        try { parsed = JSON.parse(await importFile.text()); }
-        catch (e) { throw new Error('Не удалось прочитать JSON: ' + e.message); }
-        if (probe.exists) {
-          if (confirm(`Файл уже существует по пути ${cfg.path} в ${cfg.owner}/${cfg.repo}. Перезаписать его импортированными данными?`)) {
-            await store.load();
-            await store.save(parsed, 'Импорт из локального data.json');
-          }
-        } else {
-          await store.save(parsed, 'Первоначальный импорт из data.json');
-        }
-      }
-
-      saveConfig(cfg);
-      onSaved(cfg);
-    } catch (e) { setError(String(e.message || e)); }
-    finally { setBusy(false); }
-  };
-
-  return (
-    <div className="setup-screen">
-      <div className="setup-card">
-        <h1>Ежедневный прогресс</h1>
-        <div className="lead">
-          Подключитесь к GitHub, чтобы данные надёжно хранились в облаке.
-          {CHILD_KEY && <div style={{ marginTop: 8, fontSize: 13, color: 'var(--peach-deep)', fontWeight: 800 }}>Профиль: {CHILD_KEY}</div>}
-        </div>
-
-        <details className="setup-howto">
-          <summary>Как настроить (примерно 5 минут)</summary>
-          <ol>
-            <li>Создай приватный репозиторий на GitHub для данных, например <code>child-progress-data</code>. Может быть пустым.</li>
-            <li>Создай fine-grained персональный токен здесь: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>.</li>
-            <li>В разделе <em>Repository access</em> выбери «Only select repositories» → выбери репозиторий с данными. В <em>Repository permissions → Contents</em> поставь <strong>Read and write</strong>.</li>
-            <li>Скопируй токен (начинается с <code>github_pat_…</code>) и вставь ниже.</li>
-            <li>Если у тебя уже есть <code>data.json</code>, прикрепи его ниже для импорта.</li>
-          </ol>
-        </details>
-
-        {error && <div className="setup-error">{error}</div>}
-
-        <div className="setup-field">
-          <label>Имя пользователя GitHub</label>
-          <input type="text" value={owner} onChange={e => setOwner(e.target.value)} placeholder="ваш-логин-github" autoFocus />
-        </div>
-        <div className="setup-field">
-          <label>Название репозитория</label>
-          <input type="text" value={repo} onChange={e => setRepo(e.target.value)} placeholder="child-progress-data" />
-        </div>
-        <div className="setup-field">
-          <label>Путь к файлу в репозитории</label>
-          <input type="text" value={path} onChange={e => setPath(e.target.value)} placeholder="data.json" />
-          <div className="setup-help">Где находится JSON в репозитории. <code>data.json</code> в корне подойдёт.</div>
-        </div>
-        <div className="setup-field">
-          <label>Персональный токен</label>
-          <input type="password" value={token} onChange={e => setToken(e.target.value)} placeholder="github_pat_…" autoComplete="off" />
-          <div className="setup-help">Хранится только в этом браузере. Отправляется только в GitHub.</div>
-        </div>
-        <div className="setup-field">
-          <label>Импорт data.json (необязательно)</label>
-          <label className="file-picker">
-            {importFile ? 'Выбрать другой файл…' : 'Выбрать data.json…'}
-            <input type="file" accept="application/json,.json" onChange={e => setImportFile(e.target.files?.[0] || null)} />
-          </label>
-          {importFile && <span className="file-name">{importFile.name}</span>}
-        </div>
-
-        <div className="setup-actions">
-          <button className="btn primary" onClick={submit} disabled={busy}>
-            {busy ? 'Подключаем…' : 'Подключить и сохранить'}
-          </button>
         </div>
       </div>
     </div>
