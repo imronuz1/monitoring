@@ -1099,6 +1099,7 @@ const FIREBASE_CONFIG = {
 firebase.initializeApp(FIREBASE_CONFIG);
 const firebaseAuth = firebase.auth();
 const firebaseDb = firebase.database();
+const REPORT_WORKER_API = 'https://child-progress-report.crazy-dinow.workers.dev';
 
 // ----------------------------------------------------------------------------
 // Firebase Realtime Database store
@@ -1124,6 +1125,27 @@ class FirebaseStore {
   async save(data) { await this.ref.set(data); }
 }
 
+async function syncTelegramProfile(profile, data) {
+  const user = firebaseAuth.currentUser;
+  if (!user) throw new Error('Нужен вход через Google.');
+  const date = todayKey();
+  const token = await user.getIdToken();
+  const response = await fetch(`${REPORT_WORKER_API}/sync/${profile}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      date,
+      child_name: data.settings?.child_name,
+      subjects: (data.subjects || []).map(({ id, name, target, icon, unit, created_at, deleted_at, schedule }) =>
+        ({ id, name, target, icon, unit, created_at, deleted_at, schedule })),
+      progress: data.progress?.[date] || {},
+      mood: data.moods?.[date] || '',
+      note: data.notes?.[date] || '',
+    }),
+  });
+  if (!response.ok) throw new Error(`Cloudflare: ${response.status}`);
+}
+
 // ----------------------------------------------------------------------------
 // Root
 // ----------------------------------------------------------------------------
@@ -1135,6 +1157,13 @@ function Root() {
     nextUser => { setUser(nextUser); setAuthReady(true); setAuthError(''); },
     error => { setAuthError(String(error.message || error)); setAuthReady(true); }
   ), []);
+  useEffect(() => {
+    if (!user) return;
+    Promise.all(['fuzayl', 'imron', 'komron'].map(async profile => {
+      const data = await new FirebaseStore(profile).load();
+      await syncTelegramProfile(profile, data);
+    })).catch(error => console.warn('Telegram sync:', error));
+  }, [user?.uid]);
   const signIn = async () => {
     setAuthError('');
     try { await firebaseAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
@@ -1162,6 +1191,7 @@ function App({ config, user, onSignOut }) {
   const [loadError, setLoadError] = useState('');
   const [saveStatus, setSaveStatus] = useState('saved');
   const [saveError, setSaveError] = useState('');
+  const [reportSyncError, setReportSyncError] = useState('');
   const [data, setData] = useState({ subjects: [], progress: {}, notes: {}, saturday_exercises: {}, moods: {}, checks: {}, settings: {} });
   const [activeDate, setActiveDate] = useState(todayKey());
   const [toast, setToast] = useState('');
@@ -1179,6 +1209,9 @@ function App({ config, user, onSignOut }) {
         const d = await storeRef.current.load();
         setData(d);
         setLoaded(true);
+        syncTelegramProfile(config.child, d)
+          .then(() => setReportSyncError(''))
+          .catch(error => setReportSyncError(String(error.message || error)));
       } catch (e) { setLoadError(String(e.message || e)); }
     })();
   }, []);
@@ -1197,13 +1230,19 @@ function App({ config, user, onSignOut }) {
       try {
         await storeRef.current.save(next);
         setSaveStatus('saved');
+        try {
+          await syncTelegramProfile(config.child, next);
+          setReportSyncError('');
+        } catch (error) {
+          setReportSyncError(String(error.message || error));
+        }
       } catch (e) {
         console.error('save failed:', e);
         setSaveStatus('error');
         setSaveError(String(e.message || e));
       }
     }, 3000);
-  }, []);
+  }, [config.child]);
 
   const update = (mutator) => {
     setData(prev => {
@@ -1307,6 +1346,12 @@ function App({ config, user, onSignOut }) {
     try {
       await storeRef.current.save(data);
       setSaveStatus('saved'); setSaveError(''); showToast('Сохранено');
+      try {
+        await syncTelegramProfile(config.child, data);
+        setReportSyncError('');
+      } catch (error) {
+        setReportSyncError(String(error.message || error));
+      }
     } catch (e) {
       setSaveStatus('error'); setSaveError(String(e.message || e));
     }
@@ -1322,6 +1367,12 @@ function App({ config, user, onSignOut }) {
         setSaveError(String(e.message || e));
         return;
       }
+    }
+    try {
+      await syncTelegramProfile(config.child, data);
+      setReportSyncError('');
+    } catch (e) {
+      setReportSyncError(String(e.message || e));
     }
     await onSignOut();
   };
@@ -1411,6 +1462,7 @@ function App({ config, user, onSignOut }) {
           <span className={`pill ${status.tone}`}>{status.label} · {Math.round(totalCompletion * 100)}%</span>
           <div className="header-actions">
             <SaveIndicator status={saveStatus} error={saveError} />
+            {reportSyncError && <span className="err" title={reportSyncError}>Telegram не обновлён</span>}
             <button className="btn" onClick={() => setShowStats(true)}>Статистика</button>
             <button className="btn" onClick={() => setShowSettings(true)}>Настройки</button>
           </div>
