@@ -1,0 +1,12 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "profiles": {
+      "$profile": {
+        ".read": "auth != null && ($profile === 'fuzayl' || $profile === 'imron' || $profile === 'komron')",
+        ".write": "auth != null && newData.exists() && ($profile === 'fuzayl' || $profile === 'imron' || $profile === 'komron')"
+      }
+    }
+  }
+}

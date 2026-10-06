@@ -1127,7 +1127,7 @@ class FirebaseStore {
 
 async function syncTelegramProfile(profile, data) {
   const user = firebaseAuth.currentUser;
-  if (!user) throw new Error('Нужен вход через Google.');
+  if (!user) throw new Error('Нет соединения с Firebase.');
   const date = todayKey();
   const token = await user.getIdToken();
   const response = await fetch(`${REPORT_WORKER_API}/sync/${profile}`, {
@@ -1151,11 +1151,13 @@ async function syncTelegramProfile(profile, data) {
 // ----------------------------------------------------------------------------
 function Root() {
   const [user, setUser] = useState(null);
-  const [authReady, setAuthReady] = useState(false);
   const [authError, setAuthError] = useState('');
   useEffect(() => firebaseAuth.onAuthStateChanged(
-    nextUser => { setUser(nextUser); setAuthReady(true); setAuthError(''); },
-    error => { setAuthError(String(error.message || error)); setAuthReady(true); }
+    nextUser => {
+      if (nextUser) { setUser(nextUser); setAuthError(''); }
+      else firebaseAuth.signInAnonymously().catch(error => setAuthError(String(error.message || error)));
+    },
+    error => setAuthError(String(error.message || error))
   ), []);
   useEffect(() => {
     if (!user) return;
@@ -1164,28 +1166,16 @@ function Root() {
       await syncTelegramProfile(profile, data);
     })).catch(error => console.warn('Telegram sync:', error));
   }, [user?.uid]);
-  const signIn = async () => {
-    setAuthError('');
-    try { await firebaseAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-    catch (error) { setAuthError(String(error.message || error)); }
-  };
-  if (!authReady) return <div className="loading">Подключаемся к Firebase…</div>;
-  if (!user) return (
-    <div className="setup-screen"><div className="setup-card">
-      <h1>Ежедневный прогресс</h1>
-      <div className="lead">Войдите, чтобы открыть семейные задачи.</div>
-      {authError && <div className="setup-error">{authError}</div>}
-      <div className="setup-actions"><button className="btn primary" onClick={signIn}>Войти через Google</button></div>
-    </div></div>
-  );
+  if (authError) return <div className="loading">Не удалось подключиться к Firebase: {authError}</div>;
+  if (!user) return <div className="loading">Подключаемся к Firebase…</div>;
   const config = PROFILE_CONFIGS[CHILD_KEY] || PROFILE_CONFIGS[''];
-  return <App key={config.child} config={config} user={user} onSignOut={() => firebaseAuth.signOut()} />;
+  return <App key={config.child} config={config} />;
 }
 
 // ----------------------------------------------------------------------------
 // App
 // ----------------------------------------------------------------------------
-function App({ config, user, onSignOut }) {
+function App({ config }) {
   const storeRef = useRef(new FirebaseStore(config.child));
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -1356,27 +1346,6 @@ function App({ config, user, onSignOut }) {
       setSaveStatus('error'); setSaveError(String(e.message || e));
     }
   };
-  const signOutSafely = async () => {
-    if (saveStatus === 'saving') {
-      if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
-      try {
-        await storeRef.current.save(data);
-        setSaveStatus('saved');
-      } catch (e) {
-        setSaveStatus('error');
-        setSaveError(String(e.message || e));
-        return;
-      }
-    }
-    try {
-      await syncTelegramProfile(config.child, data);
-      setReportSyncError('');
-    } catch (e) {
-      setReportSyncError(String(e.message || e));
-    }
-    await onSignOut();
-  };
-
   const allSubjects = data.subjects;
   const subjects = useMemo(() => subjectsForDate(allSubjects, activeDate), [allSubjects, activeDate]);
   const regularSubjects = subjects.filter(s => !isSaturdaySubject(s));
@@ -1424,8 +1393,6 @@ function App({ config, user, onSignOut }) {
           <div className="err">{loadError}</div>
           <div style={{ marginTop: 14 }}>
             <button className="btn" onClick={() => window.location.reload()}>Повторить</button>
-            {' '}
-            <button className="btn" onClick={onSignOut}>Другой аккаунт</button>
           </div>
         </div>
       </div>
@@ -1754,9 +1721,7 @@ function App({ config, user, onSignOut }) {
         <SettingsModal
           settings={data.settings}
           config={config}
-          user={user}
           onSave={updateSettings}
-          onSignOut={signOutSafely}
           onClose={() => setShowSettings(false)}
           dataSnapshot={data}
           saveStatus={saveStatus}
@@ -2025,7 +1990,7 @@ function StatsModal({ progress, subjects, onClose, onPickDate }) {
 }
 
 // ----------------------------------------------------------------------------
-function SettingsModal({ settings, config, user, onSave, onSignOut, onClose, dataSnapshot, saveStatus, saveError, onFlush }) {
+function SettingsModal({ settings, config, onSave, onClose, dataSnapshot, saveStatus, saveError, onFlush }) {
   const [name, setName] = useState(settings.child_name || '');
   const [klass, setKlass] = useState(settings.class_name || '');
   const [reminder, setReminder] = useState(settings.reminder_time || '');
@@ -2097,9 +2062,9 @@ function SettingsModal({ settings, config, user, onSave, onSignOut, onClose, dat
         <div className="settings-row">
           <div>
             <div className="settings-label">Профиль</div>
-            <div className="settings-help">Данные сохраняются в защищённой базе Firebase.</div>
+            <div className="settings-help">Данные сохраняются в Firebase и доступны посетителям сайта.</div>
           </div>
-          <span>{config.child} · {user.email}</span>
+          <span>{config.child}</span>
         </div>
 
         <div className="settings-section-head">Синхронизация и копии</div>
@@ -2123,14 +2088,6 @@ function SettingsModal({ settings, config, user, onSave, onSignOut, onClose, dat
             <div className="settings-help">Скачать копию данных в формате JSON.</div>
           </div>
           <button className="btn" onClick={exportJson} style={{ maxWidth: 200 }}>Скачать JSON</button>
-        </div>
-
-        <div className="settings-row">
-          <div>
-            <div className="settings-label">Аккаунт</div>
-            <div className="settings-help">Выйти из семейного приложения на этом устройстве.</div>
-          </div>
-          <button className="btn danger" onClick={onSignOut} style={{ maxWidth: 200 }}>Выйти</button>
         </div>
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 22 }}>

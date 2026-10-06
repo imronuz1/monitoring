@@ -44,7 +44,7 @@ async function authorized(request) {
   );
   if (!response.ok) return false;
   const account = (await response.json()).users?.[0];
-  return account?.email === 'imron.doc@gmail.com' && account?.emailVerified === true && !account?.disabled;
+  return !!account?.localId && !account.disabled;
 }
 
 function cleanSnapshot(raw, profile) {
