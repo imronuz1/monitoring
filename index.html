@@ -443,14 +443,14 @@
   .subject-edit {
     flex: 1 1 100%;
     display: grid;
-    grid-template-columns: 60px 1fr 100px 110px auto auto;
+    grid-template-columns: 60px 1fr 100px 110px 150px auto auto;
     gap: 10px;
     padding-top: 14px;
     margin-top: 6px;
     align-items: center;
     border-top: 1px dashed var(--divider);
   }
-  .subject-edit input {
+  .subject-edit input, .subject-edit select {
     background: var(--card-tint);
     border: 1.5px solid var(--border);
     border-radius: var(--radius-xs);
@@ -461,7 +461,7 @@
     width: 100%;
     color: var(--ink);
   }
-  .subject-edit input:focus { outline: 2px solid var(--peach); outline-offset: -1px; border-color: transparent; }
+  .subject-edit input:focus, .subject-edit select:focus { outline: 2px solid var(--peach); outline-offset: -1px; border-color: transparent; }
 
   .add-form {
     background: var(--card);
@@ -1758,9 +1758,10 @@ function SubjectRow({ subject, value, editing, onStartEdit, onCancelEdit, onSave
   const [name, setName] = useState(s.name);
   const [target, setTarget] = useState(String(s.target));
   const [unit, setUnit] = useState(s.unit);
+  const [schedule, setSchedule] = useState(isSaturdaySubject(s) ? 'saturday' : 'daily');
 
   useEffect(() => {
-    if (editing) { setIcon(s.icon); setName(s.name); setTarget(String(s.target)); setUnit(s.unit); }
+    if (editing) { setIcon(s.icon); setName(s.name); setTarget(String(s.target)); setUnit(s.unit); setSchedule(isSaturdaySubject(s) ? 'saturday' : 'daily'); }
   }, [editing, s.id]);
 
   const handleSave = () => {
@@ -1770,6 +1771,7 @@ function SubjectRow({ subject, value, editing, onStartEdit, onCancelEdit, onSave
       name: name.trim(),
       target: Math.max(1, parseInt(target) || 1),
       unit: unit.trim(),
+      schedule: schedule === 'saturday' ? 'saturday' : '',
     });
   };
 
@@ -1828,6 +1830,10 @@ function SubjectRow({ subject, value, editing, onStartEdit, onCancelEdit, onSave
           <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Название" />
           <input type="number" value={target} onChange={e => setTarget(e.target.value)} min="1" placeholder="Цель" />
           <input type="text" value={unit} onChange={e => setUnit(e.target.value)} placeholder="Единица" />
+          <select aria-label="Тип задачи" value={schedule} onChange={e => setSchedule(e.target.value)}>
+            <option value="daily">Ежедневная</option>
+            <option value="saturday">Субботняя</option>
+          </select>
           <button className="btn primary" onClick={handleSave}>Сохранить</button>
           <button className="btn" onClick={onCancelEdit}>Отмена</button>
         </div>
