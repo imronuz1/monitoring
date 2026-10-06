@@ -4,6 +4,7 @@
 
 const FIREBASE_API_KEY = 'AIzaSyA7I5qjQISZpbMVsufqvpIeSzb3BTAoQBU';
 const SITE_ORIGIN = 'https://imronuz1.github.io';
+const REPORT_CHAT_ID = '-1004495000068';
 const PROFILES = [
   ['fuzayl', 'Fuzayl'],
   ['imron', 'Imron'],
@@ -139,7 +140,8 @@ async function sendReport(env, { force = false } = {}) {
     if (!snapshot) throw new Error(`Profile ${key} has not synced to Cloudflare yet`);
     return snapshot;
   }));
-  const groupIds = JSON.parse(await env.TELEGRAM_GROUPS.get('chat_ids') || '[]');
+  const groupIds = JSON.parse(await env.TELEGRAM_GROUPS.get('chat_ids') || '[]')
+    .filter(id => String(id) === REPORT_CHAT_ID);
   const topics = JSON.parse(await env.TELEGRAM_GROUPS.get('topic_ids') || '{}');
   if (!groupIds.length) throw new Error('No Telegram group is registered');
   const report = `📊 Ежедневный семейный прогресс\n📅 ${date}\n\n` +
