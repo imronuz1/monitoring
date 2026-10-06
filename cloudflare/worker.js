@@ -63,7 +63,7 @@ function cleanSnapshot(raw, profile) {
       unit: String(subject.unit || '').slice(0, 40),
       created_at: String(subject.created_at || '').slice(0, 10),
       deleted_at: String(subject.deleted_at || '').slice(0, 10),
-      schedule: subject.schedule === 'saturday' ? 'saturday' : '',
+      schedule: subject.schedule === 'saturday' ? 'saturday' : subject.schedule === 'daily' ? 'daily' : '',
     };
   });
   const progress = {};
@@ -85,7 +85,8 @@ function activeSubjects(subjects, date) {
     const stamp = /^s(\d{13})$/.exec(subject.id);
     const created = subject.created_at || (stamp ? tashkentDate(new Date(Number(stamp[1]))) : '');
     const lifecycle = (!created || date >= created) && (!subject.deleted_at || date < subject.deleted_at);
-    const saturdayOnly = subject.schedule === 'saturday' || subject.name.trim().toLowerCase() === 'saturday exercises';
+    const saturdayOnly = subject.schedule === 'saturday' ||
+      (subject.schedule !== 'daily' && subject.name.trim().toLowerCase() === 'saturday exercises');
     return lifecycle && !saturdayOnly;
   });
 }

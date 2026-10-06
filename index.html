@@ -928,8 +928,9 @@ function subjectCreatedDate(subject) {
 }
 
 function isSaturdaySubject(subject) {
-  return subject.schedule === 'saturday' ||
-    String(subject.name || '').trim().toLowerCase() === 'saturday exercises';
+  if (subject.schedule === 'saturday') return true;
+  if (subject.schedule === 'daily') return false;
+  return String(subject.name || '').trim().toLowerCase() === 'saturday exercises';
 }
 
 function subjectWasActive(subject, key) {
@@ -1771,7 +1772,7 @@ function SubjectRow({ subject, value, editing, onStartEdit, onCancelEdit, onSave
       name: name.trim(),
       target: Math.max(1, parseInt(target) || 1),
       unit: unit.trim(),
-      schedule: schedule === 'saturday' ? 'saturday' : '',
+      schedule,
     });
   };
 
