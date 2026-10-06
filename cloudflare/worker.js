@@ -81,13 +81,12 @@ function cleanSnapshot(raw, profile) {
 }
 
 function activeSubjects(subjects, date) {
-  const saturday = new Date(`${date}T12:00:00+05:00`).getUTCDay() === 6;
   return subjects.filter((subject) => {
     const stamp = /^s(\d{13})$/.exec(subject.id);
     const created = subject.created_at || (stamp ? tashkentDate(new Date(Number(stamp[1]))) : '');
     const lifecycle = (!created || date >= created) && (!subject.deleted_at || date < subject.deleted_at);
     const saturdayOnly = subject.schedule === 'saturday' || subject.name.trim().toLowerCase() === 'saturday exercises';
-    return lifecycle && (!saturdayOnly || saturday);
+    return lifecycle && !saturdayOnly;
   });
 }
 

@@ -939,7 +939,7 @@ function subjectWasActive(subject, key) {
 
 function subjectsForDate(subjects, key) {
   return subjects.filter(subject =>
-    subjectWasActive(subject, key) && (!isSaturdaySubject(subject) || isSaturday(key))
+    subjectWasActive(subject, key) && !isSaturdaySubject(subject)
   );
 }
 
@@ -1213,7 +1213,7 @@ function App({ config }) {
     return () => clearTimeout(t);
   }, [activeDate]);
 
-  const scheduleSave = useCallback((next) => {
+  const scheduleSave = useCallback((next, delay = 3000) => {
     setSaveStatus('saving'); setSaveError('');
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
@@ -1231,13 +1231,13 @@ function App({ config }) {
         setSaveStatus('error');
         setSaveError(String(e.message || e));
       }
-    }, 3000);
+    }, delay);
   }, [config.child]);
 
-  const update = (mutator) => {
+  const update = (mutator, saveDelay) => {
     setData(prev => {
       const next = mutator(prev);
-      scheduleSave(next);
+      scheduleSave(next, saveDelay);
       return next;
     });
   };
@@ -1301,9 +1301,9 @@ function App({ config }) {
   const removeSubject = (id) => {
     update(prev => ({
       ...prev,
-      subjects: prev.subjects.map(s => s.id === id ? { ...s, deleted_at: todayKey() } : s),
-    }));
-    showToast('Задача удалена с сегодняшнего дня');
+      subjects: prev.subjects.map(s => s.id === id ? { ...s, deleted_at: activeDate } : s),
+    }), 0);
+    showToast('Задача удалена с выбранного дня');
   };
   const updateSubject = (id, fields) => {
     update(prev => ({ ...prev, subjects: prev.subjects.map(s => s.id === id ? { ...s, ...fields } : s) }));
@@ -1348,7 +1348,7 @@ function App({ config }) {
   };
   const allSubjects = data.subjects;
   const subjects = useMemo(() => subjectsForDate(allSubjects, activeDate), [allSubjects, activeDate]);
-  const regularSubjects = subjects.filter(s => !isSaturdaySubject(s));
+  const regularSubjects = subjects;
   const saturdaySubjects = allSubjects.filter(s => isSaturdaySubject(s) && subjectWasActive(s, activeDate));
   const totalCompletion = useMemo(() => dayCompletion(todayProgress, subjects), [todayProgress, subjects]);
   const completedCount = subjects.filter(s => (todayProgress[s.id] || 0) >= s.target).length;
